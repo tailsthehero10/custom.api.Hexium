@@ -7,6 +7,39 @@ const PORT = Number(process.env.PORT) || 3000;
 const HOST = "0.0.0.0";
 const PAGE_PATH = path.join(__dirname, "index.html");
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const MAX_HOSTED_VIDEOS = 1000;
+let HOSTED_VIDEO_CATALOG = [];
+if (process.env.HOSTED_VIDEO_CATALOG) {
+	try {
+		const configuredCatalog = JSON.parse(process.env.HOSTED_VIDEO_CATALOG);
+		if (!Array.isArray(configuredCatalog) || configuredCatalog.length > MAX_HOSTED_VIDEOS) {
+			throw new Error(`Expected a JSON array containing at most ${MAX_HOSTED_VIDEOS} videos.`);
+		}
+		const hostedIds = new Set();
+		HOSTED_VIDEO_CATALOG = configuredCatalog.map((video, index) => {
+			if (!video || typeof video !== "object" || Array.isArray(video)
+				|| typeof video.id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(video.id)
+				|| hostedIds.has(video.id)
+				|| typeof video.title !== "string" || !video.title.trim() || video.title.length > 512
+				|| typeof video.url !== "string" || video.url.length > 2048) {
+				throw new Error(`Invalid or duplicate hosted video entry at index ${index}.`);
+			}
+			const videoUrl = new URL(video.url);
+			if (videoUrl.protocol !== "https:" || videoUrl.username || videoUrl.password) {
+				throw new Error(`Hosted video entry "${video.id}" must use an HTTPS URL without embedded credentials.`);
+			}
+			hostedIds.add(video.id);
+			return {
+				hostedId: video.id,
+				title: video.title.trim(),
+				url: videoUrl.toString(),
+				channelTitle: typeof video.channelTitle === "string" ? video.channelTitle.slice(0, 120) : "",
+			};
+		});
+	} catch (error) {
+		throw new Error(`Invalid HOSTED_VIDEO_CATALOG: ${error.message}`);
+	}
+}
 const POPULAR_REGION_CODE = /^[A-Z]{2}$/.test(process.env.YOUTUBE_REGION_CODE || "US")
 	? process.env.YOUTUBE_REGION_CODE || "US"
 	: "US";
@@ -675,6 +708,29 @@ const server = http.createServer((request, response) => {
 				console.error("[Hexium Catalog] Unexpected video catalog error:", error);
 				sendJson(response, 500, { error: "Video catalog is unavailable." });
 			});
+		return;
+	}
+
+	if (requestUrl.pathname === "/hosted-videos") {
+		const query = (requestUrl.searchParams.get("query") || "").trim().toLowerCase();
+		const pageToken = requestUrl.searchParams.get("pageToken") || "0";
+		if (query.length > 100) {
+			sendJson(response, 400, { error: "Search query must be 100 characters or fewer." });
+			return;
+		}
+		if (!/^\d{1,10}$/.test(pageToken)) {
+			sendJson(response, 400, { error: "pageToken must be a numeric hosted-catalog offset." });
+			return;
+		}
+		const matchingVideos = HOSTED_VIDEO_CATALOG
+			.filter((video) => !query
+				|| video.title.toLowerCase().includes(query)
+				|| video.channelTitle.toLowerCase().includes(query));
+		const offset = Number(pageToken);
+		const videos = matchingVideos.slice(offset, offset + 50);
+		const nextPageToken = offset + videos.length < matchingVideos.length
+			? String(offset + videos.length) : "";
+		sendJson(response, 200, { videos, nextPageToken });
 		return;
 	}
 

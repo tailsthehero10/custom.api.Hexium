@@ -151,6 +151,31 @@ The corresponding image/video assets must already be uploaded, approved, and
 usable by the Roblox experience. The YouTube image URLs returned by the Data
 API cannot be assigned directly to Roblox `ImageLabel`s.
 
+### List your own hosted videos in Roblox
+
+For videos you own or are licensed to distribute, add a JSON array to the
+Render service environment variable `HOSTED_VIDEO_CATALOG`. Each entry needs a
+unique `id`, a `title`, and a direct HTTPS `url`; `channelTitle` is optional:
+
+```json
+[
+  {
+    "id": "my-trailer",
+    "title": "My licensed game trailer",
+    "url": "https://media.example.com/trailer.mp4",
+    "channelTitle": "My Studio"
+  }
+]
+```
+
+The API validates the entries at startup and serves them from `/hosted-videos`.
+In the in-game browser, select **Hosted** to search and list these URLs. Roblox
+does not allow a `VideoFrame` to play an arbitrary HTTPS URL, so selecting an
+entry displays its link for copying and opening outside the game. To play a
+video inside Roblox, upload it through Roblox's video asset workflow and use
+the approved asset ID with `ROBLOX_VIDEO_ASSET_MAP` instead. Only list media
+you own or have permission to distribute.
+
 ## Run locally
 
 Requires Node.js 16 or later. From this folder:
