@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: hexium-video-catalog
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start

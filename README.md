@@ -5,10 +5,10 @@ It has no external package dependencies.
 
 ## Deploy on Render
 
-1. Push this project to a GitHub repository that Render can access.
+1. Push this repository to GitHub.
 2. In Render, choose **New > Blueprint** and select that repository.
-3. Render will read the repository-root `render.yaml`. It deploys this folder as
-   a Node.js web service named `hexium-video-catalog`.
+3. Render reads `render.yaml` from the repository root and deploys this project
+   as a Node.js web service named `hexium-video-catalog`.
 4. After deployment, open the service URL. The status page should load, and
    `/health` should return `{"status":"ok"}`. The catalog endpoint is
    `https://<your-render-service>.onrender.com/videos`.
@@ -21,7 +21,7 @@ idle can take longer.
 
 ## Run locally
 
-From this folder, run:
+From the repository root, run:
 
 ```text
 npm start
