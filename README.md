@@ -35,6 +35,9 @@ GET /videos?query=roblox&order=relevance
 GET /videos?feed=shorts
 GET /videos?feed=live
 GET /videos?query=gaming&feed=shorts
+GET /videos?duration=long&published=month&categoryId=20
+GET /videos?feed=channel&channelId=UCxxxxxxxxxxxxxxxxxxxxxx
+GET /comments?videoId=YouTubeVideoId
 GET /health
 ```
 
@@ -44,11 +47,28 @@ The YouTube Data API does not expose a Shorts label or video orientation, so
 this is a best-effort Shorts-style feed rather than an exact copy of YouTube's
 Shorts classification. Video details include duration and view counts.
 
+Home and Popular use YouTube's regional `mostPopular` chart (`US` by default;
+set `YOUTUBE_REGION_CODE` to another two-letter region code). Search, channel
+pages, upload-date filters, duration filters, and category filters use YouTube
+search. Set Shorts and Live as feed types. Public comments are read-only and
+may be unavailable when a video's owner has disabled comments.
+
 The website includes Home, Shorts, Live, Trending, Gaming/Music/Technology,
-Latest and Popular views, a separate watch page with an up-next list, and a
-local Watch later list saved in the visitor's browser. The Roblox catalog has
-Videos, Shorts, Live, Latest and Popular controls; it displays titles and links
-because Roblox cannot embed the YouTube player.
+Latest and Popular views, search filters, channel pages, public comments, a
+watch page with an up-next list, and local Watch later, History, Liked videos,
+Subscriptions, and Playlists stored in the visitor's browser. These local
+library features do not sync with a YouTube account. The Data API requires
+OAuth and additional account scopes for actions such as subscribing, liking,
+commenting, and accessing private playlists; this app does not impersonate
+those account actions.
+
+The Roblox video browser opens full-screen when the LocalScript starts, fetches
+the live catalog through the server, and refreshes it every five minutes while
+open. It has Videos, Shorts, Live, Latest, Popular and search controls. Results
+show video metadata and copyable links. Roblox cannot render an arbitrary
+website, external YouTube thumbnails, or the YouTube player inside a ScreenGui;
+thumbnail placeholders are shown unless a thumbnail is separately uploaded as
+a Roblox asset.
 
 The default video and live feeds return up to 12 results. Shorts searches up to
 50 candidates before filtering by duration, so its response can contain up to
@@ -78,16 +98,22 @@ The default video and live feeds return up to 12 results. Shorts searches up to
 
 ## Connect Roblox Studio 2021
 
-The server script in `ServerScriptService` requests `/videos` over HTTPS. It
-passes a search phrase using the `query` parameter when the player searches,
-and a selected feed using `feed=shorts` or `feed=live`.
-The LocalScript in `StarterGui` displays those same YouTube results. Enable
-**Game Settings > Security > Allow HTTP Requests**.
+Put `VideoCatalogServer.server.luau` in `ServerScriptService` and
+`YouTubeBrowser.luau` in `StarterGui` as a `LocalScript`. The server script
+requests the deployed `/videos` endpoint over HTTPS. It passes the search
+phrase and selected feed (`shorts` or `live`) through a `RemoteFunction`; API
+keys stay on the server. Enable **Game Settings > Security > Allow HTTP
+Requests**. The browser opens full-screen on join; close it with **X**, then
+use **Open Video Browser** to reopen it. Search and feed selections query the
+API, and the current feed refreshes every five minutes while the browser is
+open.
 
-The in-game UI displays metadata and watch links; it cannot embed the website
-or stream YouTube playback. Roblox also denies game scripts permission to
-force-open external browser windows, so the site and video buttons expose a
-selectable URL for players to copy and open outside the game.
+The in-game UI displays dynamic metadata and selectable watch links; it cannot
+embed the website, stream YouTube playback, load external thumbnail URLs into
+an `ImageLabel`, or force-open external browser windows. A result exposes its
+URL for the player to copy and open outside the game. If the feed reports an
+HTTP error, confirm HTTP requests are enabled and that the Render service has
+`YOUTUBE_API_KEY` configured.
 
 ## Run locally
 

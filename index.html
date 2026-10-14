@@ -96,6 +96,11 @@
 		.search-form input:focus { border-color: #777982; }
 		.search-form button { display: flex; width: 88px; align-items: center; justify-content: center; gap: 7px; border: 1px solid #414249; border-radius: 0 9px 9px 0; background: #292a30; color: #eeeef0; font-size: 12px; font-weight: 700; transition: background .15s; }
 		.search-form button:hover { background: #393a42; }
+		.search-filters { margin-top: 10px; }
+		.search-filters summary { width: fit-content; color: #b8bac3; font-size: 11px; cursor: pointer; }
+		.filter-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 9px; margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: #17181c; }
+		.filter-controls label { display: grid; gap: 5px; color: #9b9da6; font-size: 10px; }
+		.filter-controls select { min-height: 32px; padding: 0 8px; border: 1px solid #3b3c43; border-radius: 6px; background: #202126; color: #f4f4f6; font-size: 11px; }
 
 		.featured { position: relative; display: grid; min-height: 185px; grid-template-columns: minmax(0, 1.3fr) minmax(210px, .7fr); align-items: center; gap: 18px; margin-top: 24px; padding: 21px 23px; overflow: hidden; border: 1px solid #42313a; border-radius: 13px; background: radial-gradient(ellipse at 90% 20%, #63333370 0, transparent 45%), linear-gradient(110deg, #271a20, #22191f 50%, #19191e); }
 		.featured::after { position: absolute; top: -90px; right: 18%; width: 220px; height: 220px; border: 1px solid #ff6c5520; border-radius: 50%; box-shadow: 0 0 0 28px #ff6c5509, 0 0 0 58px #ff6c5506; content: ""; pointer-events: none; }
@@ -150,6 +155,20 @@
 		.status-line.error { color: #ff8f89; }
 		.empty-state { display: grid; min-height: 230px; place-items: center; padding: 30px; border: 1px dashed #393a42; border-radius: 11px; color: #a3a5ad; text-align: center; }
 		.empty-state strong { display: block; margin-bottom: 7px; color: #e2e2e5; font-size: 15px; }
+		.library-view { display: grid; gap: 10px; margin-bottom: 16px; }
+		.library-row { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: #191a1f; }
+		.library-row strong { flex: 1; color: #f0f0f2; font-size: 13px; }
+		.library-row span { color: var(--muted); font-size: 11px; }
+		.library-row button { min-height: 30px; padding: 0 10px; border: 1px solid #3b3c43; border-radius: 6px; background: #27282e; color: #eee; font-size: 11px; }
+		.library-row button:hover { background: #36373f; }
+		.comment-section { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border); }
+		.comment-section h2 { margin: 0 0 6px; font-size: 17px; }
+		.comment-note { margin: 0 0 12px; color: var(--muted); font-size: 11px; }
+		.comment-list { display: grid; gap: 12px; }
+		.comment { padding: 12px; border: 1px solid #292a30; border-radius: 8px; background: #15161a; }
+		.comment strong { font-size: 11px; }
+		.comment time { margin-left: 8px; color: #858791; font-size: 10px; }
+		.comment p { margin: 7px 0 0; color: #d0d1d6; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 		.watch-page { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 320px; gap: 23px; padding: 24px 28px 28px; }
 		.watch-main { min-width: 0; }
@@ -264,6 +283,10 @@
 				<button class="nav-item" type="button" data-view="technology"><span class="nav-icon">⌘</span>Technology</button>
 				<div class="sidebar-divider"></div>
 				<div class="sidebar-label">Your space</div>
+				<button class="nav-item" type="button" data-view="subscriptions"><span class="nav-icon">◉</span>Subscriptions</button>
+				<button class="nav-item" type="button" data-view="history"><span class="nav-icon">◷</span>History</button>
+				<button class="nav-item" type="button" data-view="liked"><span class="nav-icon">♥</span>Liked videos</button>
+				<button class="nav-item" type="button" data-view="playlists"><span class="nav-icon">▤</span>Playlists</button>
 				<button class="nav-item" type="button" data-view="saved"><span class="nav-icon">☆</span>Watch later</button>
 				<button class="nav-item purple" type="button" data-view="uploads"><span class="nav-icon">H</span>Hexium Uploads</button>
 				<div class="sidebar-spacer"></div>
@@ -285,6 +308,48 @@
 						<button type="submit"><span aria-hidden="true">⌕</span> Search</button>
 					</form>
 				</section>
+				<details class="search-filters">
+					<summary>Search filters</summary>
+					<div class="filter-controls">
+						<label>Upload date
+							<select id="filter-upload-date">
+								<option value="">Any time</option>
+								<option value="day">Today</option>
+								<option value="week">This week</option>
+								<option value="month">This month</option>
+								<option value="year">This year</option>
+							</select>
+						</label>
+						<label>Duration
+							<select id="filter-duration">
+								<option value="">Any length</option>
+								<option value="short">Under 4 minutes</option>
+								<option value="medium">4–20 minutes</option>
+								<option value="long">Over 20 minutes</option>
+							</select>
+						</label>
+						<label>Category
+							<select id="filter-category">
+								<option value="">All categories</option>
+								<option value="1">Film & Animation</option>
+								<option value="2">Autos & Vehicles</option>
+								<option value="10">Music</option>
+								<option value="15">Pets & Animals</option>
+								<option value="17">Sports</option>
+								<option value="20">Gaming</option>
+								<option value="22">People & Blogs</option>
+								<option value="23">Comedy</option>
+								<option value="24">Entertainment</option>
+								<option value="25">News & Politics</option>
+								<option value="26">Howto & Style</option>
+								<option value="27">Education</option>
+								<option value="28">Science & Technology</option>
+							</select>
+						</label>
+						<button class="action-button secondary" id="apply-filters" type="button">Apply filters</button>
+						<button class="action-button secondary" id="clear-filters" type="button">Clear</button>
+					</div>
+				</details>
 
 				<section class="featured" id="featured" aria-label="Featured video">
 					<div class="featured-copy">
@@ -313,6 +378,7 @@
 					<h2 id="section-title">Picked for you</h2>
 					<span id="section-subtitle">From YouTube</span>
 				</div>
+				<div class="library-view" id="library-view" hidden></div>
 				<div class="video-grid" id="videos" aria-live="polite"></div>
 				<div class="empty-state" id="empty-state" hidden></div>
 				<p class="status-line" id="status" role="status">Loading YouTube videos...</p>
@@ -326,8 +392,17 @@
 					<div class="watch-meta" id="player-details">Select a video to play it here.</div>
 					<div class="watch-actions">
 						<button class="action-button secondary" id="save-current" type="button">☆ Save for later</button>
+						<button class="action-button secondary" id="like-current" type="button">♡ Like</button>
+						<button class="action-button secondary" id="subscribe-current" type="button">Subscribe</button>
+						<button class="action-button secondary" id="view-channel" type="button">Channel</button>
+						<button class="action-button secondary" id="playlist-current" type="button">Add to playlist</button>
 						<a class="action-button secondary" id="open-youtube" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">↗ Open on YouTube</a>
 					</div>
+					<section class="comment-section" aria-label="Video comments">
+						<h2>Comments</h2>
+						<p class="comment-note" id="comments-status">Public comments from YouTube.</p>
+						<div class="comment-list" id="comments-list"></div>
+					</section>
 				</section>
 				<aside class="watch-side">
 					<h2>Up next</h2>
@@ -372,14 +447,25 @@
 		const watchList = document.getElementById("watch-list");
 		const saveCurrentButton = document.getElementById("save-current");
 		const openYoutubeLink = document.getElementById("open-youtube");
+		const libraryView = document.getElementById("library-view");
+		const commentsList = document.getElementById("comments-list");
+		const commentsStatus = document.getElementById("comments-status");
 
 		let currentVideos = [];
 		let currentVideo = null;
 		let currentView = "home";
 		let currentFilter = "home";
 		let currentFeed = "videos";
+		let currentChannel = null;
 		let requestNumber = 0;
+		let commentRequestNumber = 0;
 		let savedVideos = loadSavedVideos();
+		let historyVideos = loadStoredList("hexium-history");
+		let likedVideos = loadStoredList("hexium-liked-videos");
+		let subscriptions = loadStoredList("hexium-subscriptions")
+			.filter((channel) => channel && typeof channel.channelId === "string");
+		let playlists = loadStoredList("hexium-playlists")
+			.filter((playlist) => playlist && typeof playlist.name === "string" && Array.isArray(playlist.videos));
 
 		function loadSavedVideos() {
 			try {
@@ -388,6 +474,27 @@
 			} catch (error) {
 				console.warn("Could not read saved videos:", error);
 				return [];
+			}
+		}
+
+		function loadStoredList(key) {
+			try {
+				const stored = JSON.parse(localStorage.getItem(key) || "[]");
+				return Array.isArray(stored) ? stored : [];
+			} catch (error) {
+				console.warn(`Could not read ${key}:`, error);
+				return [];
+			}
+		}
+
+		function persistStoredList(key, value) {
+			try {
+				localStorage.setItem(key, JSON.stringify(value));
+				return true;
+			} catch (error) {
+				console.warn(`Could not save ${key}:`, error);
+				setStatus("Your browser could not save this library item. Check its storage settings.", true);
+				return false;
 			}
 		}
 
@@ -422,6 +529,60 @@
 			const count = Number(value);
 			if (!Number.isFinite(count) || count <= 0) return "";
 			return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(count) + " views";
+		}
+
+		function toggleVideoInList(list, video, key) {
+			const exists = list.some((item) => item.videoId === video.videoId);
+			const updated = exists
+				? list.filter((item) => item.videoId !== video.videoId)
+				: [video, ...list].slice(0, 200);
+			if (!persistStoredList(key, updated)) return list;
+			return updated;
+		}
+
+		function rememberWatch(video) {
+			historyVideos = [video, ...historyVideos.filter((item) => item.videoId !== video.videoId)].slice(0, 200);
+			persistStoredList("hexium-history", historyVideos);
+		}
+
+		function isLiked(videoId) {
+			return likedVideos.some((video) => video.videoId === videoId);
+		}
+
+		function isSubscribed(channelId) {
+			return Boolean(channelId && subscriptions.some((channel) => channel.channelId === channelId));
+		}
+
+		function toggleSubscription(video) {
+			if (!video.channelId) {
+				setStatus("YouTube did not provide a channel ID for this video.", true);
+				return;
+			}
+			const exists = isSubscribed(video.channelId);
+			const updated = exists
+				? subscriptions.filter((channel) => channel.channelId !== video.channelId)
+				: [{ channelId: video.channelId, channelTitle: video.channelTitle || "YouTube channel" }, ...subscriptions].slice(0, 100);
+			if (!persistStoredList("hexium-subscriptions", updated)) return;
+			subscriptions = updated;
+			updateWatchActions();
+			if (currentView === "subscriptions") renderSubscriptions();
+		}
+
+		function toggleLike(video) {
+			likedVideos = toggleVideoInList(likedVideos, video, "hexium-liked-videos");
+			updateWatchActions();
+			if (currentView === "liked") renderVideos(likedVideos);
+		}
+
+		function updateWatchActions() {
+			if (!currentVideo) return;
+			const saved = isSaved(currentVideo.videoId);
+			saveCurrentButton.textContent = saved ? "★ Saved for later" : "☆ Save for later";
+			document.getElementById("like-current").textContent = isLiked(currentVideo.videoId) ? "♥ Liked" : "♡ Like";
+			const subscribed = isSubscribed(currentVideo.channelId);
+			document.getElementById("subscribe-current").textContent = subscribed ? "Subscribed" : "Subscribe";
+			document.getElementById("subscribe-current").disabled = !currentVideo.channelId;
+			document.getElementById("view-channel").disabled = !currentVideo.channelId;
 		}
 
 		function createThumbnail(video, className) {
@@ -466,7 +627,7 @@
 				renderVideos(currentVideos);
 			}
 			if (currentVideo && currentVideo.videoId === video.videoId) {
-				updateSaveCurrentButton();
+				updateWatchActions();
 			}
 		}
 
@@ -549,6 +710,8 @@
 		}
 
 		function renderVideos(videos) {
+			libraryView.hidden = true;
+			videoGrid.hidden = false;
 			videoGrid.replaceChildren();
 			videoGrid.classList.toggle("shorts-grid", currentFeed === "shorts");
 			emptyState.hidden = videos.length !== 0;
@@ -602,6 +765,7 @@
 			}
 
 			currentVideo = video;
+			rememberWatch(video);
 			player.src = `https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`;
 			player.hidden = false;
 			watchPlaceholder.hidden = true;
@@ -613,12 +777,179 @@
 				? `https://www.youtube.com/shorts/${encodeURIComponent(video.videoId)}`
 				: `https://www.youtube.com/watch?v=${encodeURIComponent(video.videoId)}`;
 			watchPage.classList.toggle("short-watch", Boolean(video.isShort));
-			updateSaveCurrentButton();
+			updateWatchActions();
 			renderUpNext(video.videoId);
+			loadComments(video.videoId);
 			discoveryPage.hidden = true;
 			uploadsPage.hidden = true;
 			watchPage.hidden = false;
 			watchPage.scrollTop = 0;
+		}
+
+		async function loadComments(videoId) {
+			const requestId = ++commentRequestNumber;
+			commentsList.replaceChildren();
+			commentsStatus.textContent = "Loading public YouTube comments...";
+			try {
+				const response = await fetch(`/comments?videoId=${encodeURIComponent(videoId)}`);
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error || "Comments could not be loaded.");
+				if (requestId !== commentRequestNumber) return;
+				if (!Array.isArray(result.comments) || result.comments.length === 0) {
+					commentsStatus.textContent = "No public comments are available for this video.";
+					return;
+				}
+				commentsStatus.textContent = `${result.comments.length} public comments · Commenting is available on YouTube.`;
+				result.comments.forEach((item) => {
+					const article = document.createElement("article");
+					article.className = "comment";
+					const author = document.createElement("strong");
+					author.textContent = item.author || "YouTube user";
+					const time = document.createElement("time");
+					time.textContent = dateLabel(item.publishedAt);
+					const text = document.createElement("p");
+					text.textContent = item.text || "";
+					article.append(author, time, text);
+					commentsList.appendChild(article);
+				});
+			} catch (error) {
+				if (requestId !== commentRequestNumber) return;
+				commentsStatus.textContent = error.message || "Comments are unavailable.";
+				const openComments = document.createElement("a");
+				openComments.className = "action-button secondary";
+				openComments.href = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+				openComments.target = "_blank";
+				openComments.rel = "noopener noreferrer";
+				openComments.textContent = "Open YouTube to view and comment";
+				commentsList.appendChild(openComments);
+			}
+		}
+
+		function openChannel(channel) {
+			if (!channel || !/^UC[A-Za-z0-9_-]{22}$/.test(channel.channelId)) {
+				setStatus("YouTube did not provide a valid channel ID.", true);
+				return;
+			}
+			currentChannel = channel;
+			currentView = "channel";
+			currentFeed = "channel";
+			setActiveNavigation("subscriptions");
+			pageTitle.textContent = channel.channelTitle || "YouTube channel";
+			pageSubtitle.textContent = "Videos published by this channel.";
+			sectionTitle.textContent = "Channel videos";
+			sectionSubtitle.textContent = channel.channelId;
+			featured.hidden = true;
+			searchQuery.value = "";
+			libraryView.hidden = true;
+			loadVideos("", "date", "channel", channel.channelId);
+		}
+
+		function renderSubscriptions() {
+			libraryView.replaceChildren();
+			libraryView.hidden = false;
+			videoGrid.hidden = true;
+			emptyState.hidden = true;
+			resultCount.textContent = `${subscriptions.length} channels`;
+			if (subscriptions.length === 0) {
+				const row = document.createElement("div");
+				row.className = "library-row";
+				row.textContent = "Visit a video and subscribe to its channel to build this list.";
+				libraryView.appendChild(row);
+				return;
+			}
+			subscriptions.forEach((channel) => {
+				const row = document.createElement("div");
+				row.className = "library-row";
+				const name = document.createElement("strong");
+				name.textContent = channel.channelTitle;
+				const open = document.createElement("button");
+				open.type = "button";
+				open.textContent = "View channel";
+				open.addEventListener("click", () => openChannel(channel));
+				const remove = document.createElement("button");
+				remove.type = "button";
+				remove.textContent = "Unsubscribe";
+				remove.addEventListener("click", () => {
+					subscriptions = subscriptions.filter((item) => item.channelId !== channel.channelId);
+					persistStoredList("hexium-subscriptions", subscriptions);
+					renderSubscriptions();
+				});
+				row.append(name, open, remove);
+				libraryView.appendChild(row);
+			});
+		}
+
+		function createPlaylist() {
+			const name = window.prompt("Name your playlist:");
+			if (!name || !name.trim()) return;
+			const playlist = { id: `playlist-${Date.now()}`, name: name.trim().slice(0, 60), videos: [] };
+			playlists = [playlist, ...playlists];
+			if (persistStoredList("hexium-playlists", playlists)) renderPlaylists();
+		}
+
+		function renderPlaylists() {
+			libraryView.replaceChildren();
+			libraryView.hidden = false;
+			videoGrid.hidden = true;
+			emptyState.hidden = true;
+			resultCount.textContent = `${playlists.length} playlists`;
+			const create = document.createElement("button");
+			create.type = "button";
+			create.className = "action-button secondary";
+			create.textContent = "+ Create playlist";
+			create.addEventListener("click", createPlaylist);
+			libraryView.appendChild(create);
+			if (playlists.length === 0) {
+				const note = document.createElement("div");
+				note.className = "library-row";
+				note.textContent = "Create a playlist, then add videos from their watch pages.";
+				libraryView.appendChild(note);
+			}
+			playlists.forEach((playlist) => {
+				const row = document.createElement("div");
+				row.className = "library-row";
+				const name = document.createElement("strong");
+				name.textContent = playlist.name;
+				const count = document.createElement("span");
+				count.textContent = `${playlist.videos.length} videos`;
+				const open = document.createElement("button");
+				open.type = "button";
+				open.textContent = "Open";
+				open.addEventListener("click", () => {
+					currentView = `playlist:${playlist.id}`;
+					pageTitle.textContent = playlist.name;
+					pageSubtitle.textContent = "A playlist saved in this browser.";
+					sectionTitle.textContent = playlist.name;
+					sectionSubtitle.textContent = `${playlist.videos.length} videos`;
+					libraryView.hidden = true;
+					videoGrid.hidden = false;
+					currentVideos = playlist.videos;
+					renderVideos(currentVideos);
+				});
+				row.append(name, count, open);
+				libraryView.appendChild(row);
+			});
+		}
+
+		function addCurrentToPlaylist() {
+			if (!currentVideo) return;
+			if (playlists.length === 0) {
+				createPlaylist();
+				if (playlists.length === 0) return;
+			}
+			const choice = window.prompt(`Add to which playlist?\n${playlists.map((playlist) => playlist.name).join("\n")}`, playlists[0].name);
+			if (!choice) return;
+			const playlist = playlists.find((item) => item.name.toLowerCase() === choice.trim().toLowerCase());
+			if (!playlist) {
+				setStatus("That playlist was not found. Create it in Playlists first.", true);
+				return;
+			}
+			if (!playlist.videos.some((video) => video.videoId === currentVideo.videoId)) {
+				playlist.videos.unshift(currentVideo);
+				if (playlist.videos.length > 200) playlist.videos.length = 200;
+				persistStoredList("hexium-playlists", playlists);
+			}
+			setStatus(`Added to “${playlist.name}”.`);
 		}
 
 		function renderUpNext(excludeId) {
@@ -657,10 +988,9 @@
 			});
 		}
 
-		async function loadVideos(query, order, feed) {
+		async function loadVideos(query, order, feed, channelId) {
 			currentFeed = feed || currentFeed;
 			const requestId = ++requestNumber;
-			currentView = currentView === "saved" ? "saved" : "home";
 			statusLabel.classList.remove("error");
 			setStatus("Finding videos for you...");
 			videoGrid.replaceChildren();
@@ -672,6 +1002,13 @@
 				if (query) endpoint.searchParams.set("query", query);
 				if (order) endpoint.searchParams.set("order", order);
 				endpoint.searchParams.set("feed", currentFeed);
+				const uploadDate = document.getElementById("filter-upload-date").value;
+				const duration = document.getElementById("filter-duration").value;
+				const categoryId = document.getElementById("filter-category").value;
+				if (uploadDate) endpoint.searchParams.set("published", uploadDate);
+				if (duration && currentFeed === "videos") endpoint.searchParams.set("duration", duration);
+				if (categoryId) endpoint.searchParams.set("categoryId", categoryId);
+				if (channelId) endpoint.searchParams.set("channelId", channelId);
 
 				const response = await fetch(endpoint);
 				const responseBody = await response.text();
@@ -686,7 +1023,7 @@
 				if (requestId !== requestNumber) return;
 
 				currentVideos = result.videos;
-				if (currentVideos.length > 0 && !query) showFeatured(currentVideos[0]);
+				if (currentVideos.length > 0 && !query && currentFeed === "videos" && currentView === "home") showFeatured(currentVideos[0]);
 				renderVideos(currentVideos);
 				setStatus(currentVideos.length ? "You’re all caught up. Here’s what’s playing on YouTube." : "No videos came back for this view.");
 			} catch (error) {
@@ -715,9 +1052,43 @@
 				return;
 			}
 
+			currentChannel = null;
 			currentFeed = view === "shorts" ? "shorts" : view === "live" ? "live" : "videos";
 			featured.hidden = view === "saved";
 			searchQuery.value = "";
+			if (view === "subscriptions") {
+				pageTitle.textContent = "Subscriptions";
+				pageSubtitle.textContent = "Channels you follow in this browser.";
+				sectionTitle.textContent = "Your channels";
+				sectionSubtitle.textContent = "Saved locally";
+				featured.hidden = true;
+				setActiveFilter("");
+				setStatus("");
+				renderSubscriptions();
+				return;
+			} else if (view === "history" || view === "liked") {
+				const isHistory = view === "history";
+				currentVideos = isHistory ? historyVideos.slice() : likedVideos.slice();
+				pageTitle.textContent = isHistory ? "Watch history" : "Liked videos";
+				pageSubtitle.textContent = isHistory ? "Videos you watched in this browser." : "Videos you liked in this browser.";
+				sectionTitle.textContent = pageTitle.textContent;
+				sectionSubtitle.textContent = "Saved locally";
+				featured.hidden = true;
+				setActiveFilter("");
+				setStatus("");
+				renderVideos(currentVideos);
+				return;
+			} else if (view === "playlists") {
+				pageTitle.textContent = "Playlists";
+				pageSubtitle.textContent = "Your personal collections in this browser.";
+				sectionTitle.textContent = "Your playlists";
+				sectionSubtitle.textContent = "Saved locally";
+				featured.hidden = true;
+				setActiveFilter("");
+				setStatus("");
+				renderPlaylists();
+				return;
+			}
 			if (view === "saved") {
 				currentVideos = savedVideos.slice();
 				pageTitle.textContent = "Watch later";
@@ -762,7 +1133,7 @@
 				sectionTitle.textContent = "Picked for you";
 				sectionSubtitle.textContent = "From YouTube";
 				setActiveFilter("home");
-				loadVideos("", "date", "videos");
+				loadVideos("", "viewCount", "videos");
 			}
 		}
 
@@ -792,13 +1163,32 @@
 			event.preventDefault();
 			const query = searchQuery.value.trim().slice(0, 100);
 			currentView = "home";
+			currentChannel = null;
 			setActiveNavigation("home");
 			pageTitle.textContent = query ? `Results for “${query}”` : "Discover videos";
 			pageSubtitle.textContent = query ? "Searching YouTube for your phrase." : "Fresh picks from YouTube, collected in one place.";
 			sectionTitle.textContent = query ? "Search results" : "Picked for you";
 			sectionSubtitle.textContent = query ? "From YouTube" : "From YouTube";
 			setActiveFilter("");
-			loadVideos(query, query ? "relevance" : "date", currentFeed);
+			loadVideos(query, query ? "relevance" : "viewCount", currentFeed, currentChannel && currentChannel.channelId);
+		});
+		document.getElementById("apply-filters").addEventListener("click", () => {
+			const query = searchQuery.value.trim().slice(0, 100);
+			currentView = "home";
+			currentChannel = null;
+			setActiveNavigation("home");
+			pageTitle.textContent = query ? `Results for “${query}”` : "Filtered videos";
+			pageSubtitle.textContent = "Refine videos with YouTube search filters.";
+			sectionTitle.textContent = query ? "Filtered search results" : "Filtered videos";
+			sectionSubtitle.textContent = "YouTube Data API filters";
+			setActiveFilter("");
+			loadVideos(query, query ? "relevance" : "viewCount", currentFeed, currentChannel && currentChannel.channelId);
+		});
+		document.getElementById("clear-filters").addEventListener("click", () => {
+			document.getElementById("filter-upload-date").value = "";
+			document.getElementById("filter-duration").value = "";
+			document.getElementById("filter-category").value = "";
+			document.getElementById("apply-filters").click();
 		});
 
 		document.getElementById("featured-browse").addEventListener("click", () => {
@@ -809,6 +1199,18 @@
 		saveCurrentButton.addEventListener("click", () => {
 			if (currentVideo) toggleSaved(currentVideo);
 		});
+		document.getElementById("like-current").addEventListener("click", () => {
+			if (currentVideo) toggleLike(currentVideo);
+		});
+		document.getElementById("subscribe-current").addEventListener("click", () => {
+			if (currentVideo) toggleSubscription(currentVideo);
+		});
+		document.getElementById("view-channel").addEventListener("click", () => {
+			if (currentVideo && currentVideo.channelId) {
+				openChannel({ channelId: currentVideo.channelId, channelTitle: currentVideo.channelTitle });
+			}
+		});
+		document.getElementById("playlist-current").addEventListener("click", addCurrentToPlaylist);
 		window.addEventListener("keydown", (event) => {
 			if (event.key === "Escape" && !watchPage.hidden) closeWatchPage();
 		});
