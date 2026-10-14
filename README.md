@@ -123,8 +123,13 @@ phrase and selected feed (`shorts` or `live`) through a `RemoteFunction`; API
 keys stay on the server. Enable **Game Settings > Security > Allow HTTP
 Requests**. The browser opens full-screen on join; close it with **X**, then
 use **Open Video Browser** to reopen it. Search and feed selections query the
-API, and the current feed refreshes every five minutes while the browser is
-open.
+API. Each feed page has a **Load more videos** button that requests the next
+YouTube page and appends its results; duplicate videos across pages are
+discarded. The current feed refreshes every five minutes while the browser is
+open. Videos are fetched from YouTube on demand, not added to a hand-maintained
+list. YouTube search pagination is subject to the Data API's per-query result
+limit, so use a more specific search to discover beyond a broad query's
+available results.
 
 The in-game UI displays dynamic metadata and selectable watch links; it cannot
 embed the website, stream YouTube playback, load external thumbnail URLs into
