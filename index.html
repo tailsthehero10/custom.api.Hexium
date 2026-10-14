@@ -502,6 +502,7 @@
 		let currentPlaylist = null;
 		let requestNumber = 0;
 		let commentRequestNumber = 0;
+		let routeRequestNumber = 0;
 		let paginationCurrentToken = "";
 		let paginationNextToken = "";
 		let paginationBackStack = [];
@@ -947,10 +948,13 @@
 			entityHeader.appendChild(actions);
 		}
 
-		async function openChannelPage(channelId) {
+		async function openChannelPage(channelId, fromRoute) {
 			if (!/^UC[A-Za-z0-9_-]{22}$/.test(channelId || "")) {
 				setStatus("YouTube did not provide a valid channel ID.", true);
 				return;
+			}
+			if (!fromRoute) {
+				history.pushState({ hexiumRoute: "channel" }, "", `/channel?id=${encodeURIComponent(channelId)}`);
 			}
 			const requestId = ++requestNumber;
 			resetPagination();
@@ -998,7 +1002,10 @@
 			loadVideos("", "date", "channel", channel.channelId);
 		}
 
-		async function loadChannelPlaylists(channelId, pageToken) {
+		async function loadChannelPlaylists(channelId, pageToken, fromRoute) {
+			if (!pageToken && !fromRoute) {
+				history.pushState({ hexiumRoute: "channel-playlists" }, "", `/channel?id=${encodeURIComponent(channelId)}&tab=playlists`);
+			}
 			if (!pageToken) resetPagination();
 			const requestId = ++requestNumber;
 			currentView = "channel-playlists";
@@ -1055,10 +1062,13 @@
 			}
 		}
 
-		async function openPlaylistPage(playlistId, pageToken) {
+		async function openPlaylistPage(playlistId, pageToken, fromRoute) {
 			if (!/^[A-Za-z0-9_-]{10,64}$/.test(playlistId || "")) {
 				setStatus("YouTube did not provide a valid playlist ID.", true);
 				return;
+			}
+			if (!pageToken && !fromRoute) {
+				history.pushState({ hexiumRoute: "playlist" }, "", `/playlist?id=${encodeURIComponent(playlistId)}`);
 			}
 			const requestId = ++requestNumber;
 			if (!pageToken) resetPagination();
@@ -1136,17 +1146,28 @@
 			saveCurrentButton.textContent = saved ? "★ Saved for later" : "☆ Save for later";
 		}
 
-		function openWatchPage(video) {
+		function openWatchPage(video, fromRoute) {
 			if (!/^[A-Za-z0-9_-]{11}$/.test(video.videoId)) {
 				setStatus("YouTube returned an invalid video ID.", true);
 				return;
 			}
 
+			if (!fromRoute) {
+				const watchUrl = `/watch?v=${encodeURIComponent(video.videoId)}`;
+				history.pushState({
+					hexiumRoute: "watch",
+					hexiumParent: `${window.location.pathname}${window.location.search}`,
+				}, "", watchUrl);
+			}
 			currentVideo = video;
 			rememberWatch(video);
-			player.src = `https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`;
-			player.hidden = false;
-			watchPlaceholder.hidden = true;
+			const canEmbed = video.embeddable !== false;
+			player.src = canEmbed ? `https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1` : "";
+			player.hidden = !canEmbed;
+			watchPlaceholder.textContent = canEmbed
+				? "Choose a video from the list"
+				: "This video does not allow embedded playback. Use “Open on YouTube” to watch it.";
+			watchPlaceholder.hidden = canEmbed;
 			playerTitle.textContent = video.title;
 			playerDetails.textContent = [video.channelTitle || "YouTube", dateLabel(video.publishedAt), durationLabel(video.durationSeconds), countLabel(video.viewCount)]
 				.filter(Boolean)
@@ -1162,6 +1183,70 @@
 			uploadsPage.hidden = true;
 			watchPage.hidden = false;
 			watchPage.scrollTop = 0;
+		}
+
+		async function loadRouteFromLocation() {
+			const routeRequestId = ++routeRequestNumber;
+			const route = new URL(window.location.href);
+			const path = route.pathname;
+			if (path === "/watch") {
+				const videoId = route.searchParams.get("v") || "";
+				if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+					setStatus("This watch link does not contain a valid YouTube video ID.", true);
+					closeWatchPage(true);
+					history.replaceState({ hexiumRoute: "home" }, "", "/");
+					browse("home", true);
+					return;
+				}
+				if (!history.state || history.state.hexiumRoute !== "watch") {
+					history.replaceState({ hexiumRoute: "watch", standalone: true }, "", route.pathname + route.search);
+				}
+				watchPage.hidden = false;
+				discoveryPage.hidden = true;
+				uploadsPage.hidden = true;
+				watchPlaceholder.textContent = "Loading video...";
+				watchPlaceholder.hidden = false;
+				player.hidden = true;
+				try {
+					const result = await apiGet("/videos", { videoId });
+					if (routeRequestId !== routeRequestNumber) return;
+					if (!result.video || result.video.videoId !== videoId) {
+						throw new Error("YouTube did not return this video.");
+					}
+					openWatchPage(result.video, true);
+				} catch (error) {
+					if (routeRequestId !== routeRequestNumber) return;
+					closeWatchPage(true);
+					watchPage.hidden = false;
+					discoveryPage.hidden = true;
+					watchPlaceholder.textContent = error.message || "This video could not be loaded.";
+					watchPlaceholder.hidden = false;
+					player.hidden = true;
+					playerTitle.textContent = "Video unavailable";
+					playerDetails.textContent = "Check the link or try again later.";
+					console.error("Could not open shared Hexium watch link:", error);
+				}
+				return;
+			}
+			if (path === "/channel") {
+				const channelId = route.searchParams.get("id") || "";
+				if (route.searchParams.get("tab") === "playlists") {
+					await openChannelPage(channelId, true);
+					if (routeRequestId === routeRequestNumber) await loadChannelPlaylists(channelId, "", true);
+				} else {
+					await openChannelPage(channelId, true);
+				}
+				return;
+			}
+			if (path === "/playlist") {
+				await openPlaylistPage(route.searchParams.get("id") || "", "", true);
+				return;
+			}
+			if (!history.state || !history.state.hexiumRoute) {
+				history.replaceState({ hexiumRoute: "home" }, "", route.pathname === "/" ? "/" : route.pathname + route.search);
+			}
+			closeWatchPage(true);
+			browse("home", true);
 		}
 
 		async function loadComments(videoId) {
@@ -1327,7 +1412,14 @@
 				.forEach((video) => watchList.appendChild(createVideoCard(video, true)));
 		}
 
-		function closeWatchPage() {
+		function closeWatchPage(fromRoute) {
+			if (!fromRoute && window.location.pathname === "/watch") {
+				if (history.state && history.state.hexiumParent) {
+					history.back();
+					return;
+				}
+				history.replaceState({ hexiumRoute: "home" }, "", "/");
+			}
 			player.src = "";
 			player.hidden = true;
 			watchPlaceholder.hidden = false;
@@ -1401,7 +1493,10 @@
 			}
 		}
 
-		function browse(view) {
+		function browse(view, fromRoute) {
+			if (!fromRoute && window.location.pathname !== "/") {
+				history.pushState({ hexiumRoute: "home" }, "", "/");
+			}
 			currentView = view;
 			resetPagination();
 			setActiveNavigation(view);
@@ -1624,7 +1719,7 @@
 			document.getElementById("videos").scrollIntoView({ behavior: "smooth", block: "start" });
 		});
 		document.getElementById("uploads-browse").addEventListener("click", () => browse("home"));
-		document.getElementById("back-to-videos").addEventListener("click", closeWatchPage);
+		document.getElementById("back-to-videos").addEventListener("click", () => closeWatchPage());
 		saveCurrentButton.addEventListener("click", () => {
 			if (currentVideo) toggleSaved(currentVideo);
 		});
@@ -1640,11 +1735,12 @@
 			}
 		});
 		document.getElementById("playlist-current").addEventListener("click", addCurrentToPlaylist);
+		window.addEventListener("popstate", loadRouteFromLocation);
 		window.addEventListener("keydown", (event) => {
 			if (event.key === "Escape" && !watchPage.hidden) closeWatchPage();
 		});
 
-		browse("home");
+		loadRouteFromLocation();
 	</script>
 </body>
 </html>

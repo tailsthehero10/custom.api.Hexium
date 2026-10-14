@@ -23,7 +23,12 @@ video list.
 
 Open the Render service URL. The page loads recent embeddable videos by default.
 Use the search box to find videos, then select a result to play it in the
-embedded YouTube player. Search results are cached for five minutes.
+Hexium-hosted watch page. Watch links use `/watch?v=VIDEO_ID`, so they can be
+copied, shared, opened directly, and revisited with browser Back/Forward.
+Channel and public playlist details also have shareable `/channel?id=...` and
+`/playlist?id=...` routes. These pages use YouTube's official privacy-enhanced
+embed for playback; the actual YouTube video stream is not copied or hosted by
+Hexium. Search results are cached for five minutes.
 
 API examples:
 
@@ -35,6 +40,7 @@ GET /videos?query=roblox&order=relevance
 GET /videos?feed=shorts
 GET /videos?feed=live
 GET /videos?query=gaming&feed=shorts
+GET /videos?videoId=YouTubeVideoId
 GET /videos?duration=long&published=month&categoryId=20
 GET /videos?feed=channel&channelId=UCxxxxxxxxxxxxxxxxxxxxxx
 GET /search?type=channel&query=Roblox

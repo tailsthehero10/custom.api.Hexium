@@ -360,6 +360,63 @@ async function fetchYouTubeSearch(query, type, pageToken) {
 	}
 }
 
+async function fetchYouTubeVideo(videoId) {
+	if (!YOUTUBE_API_KEY) {
+		return {
+			statusCode: 503,
+			body: { error: "YouTube playback details are not configured. Set YOUTUBE_API_KEY in the Render environment." },
+		};
+	}
+
+	try {
+		const videoUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+		videoUrl.searchParams.set("part", "snippet,contentDetails,statistics,status,liveStreamingDetails");
+		videoUrl.searchParams.set("id", videoId);
+		videoUrl.searchParams.set("key", YOUTUBE_API_KEY);
+		const result = await requestYouTubeJson(videoUrl);
+		const item = Array.isArray(result.items) ? result.items[0] : null;
+		if (!item || !item.snippet) {
+			return { statusCode: 404, body: { error: "This video is unavailable or is not public." } };
+		}
+
+		const snippet = item.snippet;
+		const thumbnails = snippet.thumbnails || {};
+		const thumbnail = thumbnails.maxres || thumbnails.high || thumbnails.medium || thumbnails.default;
+		const details = item.contentDetails || {};
+		const statistics = item.statistics || {};
+		const duration = details.duration || "";
+		const durationSeconds = durationInSeconds(duration);
+		const isLive = Boolean(item.liveStreamingDetails
+			&& item.liveStreamingDetails.actualStartTime
+			&& !item.liveStreamingDetails.actualEndTime);
+		const video = {
+			videoId: item.id,
+			title: snippet.title || "",
+			channelTitle: snippet.channelTitle || "",
+			channelId: snippet.channelId || "",
+			publishedAt: snippet.publishedAt || "",
+			thumbnailUrl: thumbnail ? thumbnail.url : "",
+			watchUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(item.id)}`,
+			shortUrl: `https://www.youtube.com/shorts/${encodeURIComponent(item.id)}`,
+			duration,
+			durationSeconds,
+			isShort: !isLive && durationSeconds > 0 && durationSeconds <= 180,
+			isLive,
+			viewCount: statistics.viewCount || "0",
+			likeCount: statistics.likeCount || "0",
+			embeddable: Boolean(item.status && item.status.embeddable),
+		};
+		const robloxVideoId = ROBLOX_VIDEO_ASSET_MAP[item.id];
+		if (robloxVideoId) video.robloxVideoId = robloxVideoId;
+		const robloxThumbnailId = ROBLOX_THUMBNAIL_ASSET_MAP[item.id];
+		if (robloxThumbnailId) video.robloxThumbnailId = robloxThumbnailId;
+		return { statusCode: 200, body: { video } };
+	} catch (error) {
+		console.error("[Hexium Catalog] YouTube video lookup failed:", error.message);
+		return { statusCode: 502, body: { error: "Video details could not be loaded from YouTube." } };
+	}
+}
+
 async function fetchYouTubeChannels(channelId) {
 	if (!YOUTUBE_API_KEY) return { statusCode: 503, body: { error: "YouTube API is not configured." } };
 	try {
@@ -542,6 +599,21 @@ const server = http.createServer((request, response) => {
 	}
 
 	if (requestUrl.pathname === "/videos") {
+		const videoId = requestUrl.searchParams.get("videoId") || "";
+		if (videoId) {
+			if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+				sendJson(response, 400, { error: "A valid YouTube videoId is required." });
+				return;
+			}
+			fetchYouTubeVideo(videoId)
+				.then((result) => sendJson(response, result.statusCode, result.body))
+				.catch((error) => {
+					console.error("[Hexium Catalog] Unexpected video lookup error:", error);
+					sendJson(response, 500, { error: "Video details are unavailable." });
+				});
+			return;
+		}
+
 		const query = (requestUrl.searchParams.get("query") || "").trim();
 		const requestedFeed = requestUrl.searchParams.get("feed");
 		const feed = ["videos", "shorts", "live", "channel"].includes(requestedFeed) ? requestedFeed : "videos";
@@ -710,7 +782,7 @@ const server = http.createServer((request, response) => {
 		return;
 	}
 
-	if (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html") {
+	if (["/", "/index.html", "/watch", "/channel", "/playlist"].includes(requestUrl.pathname)) {
 		fs.readFile(PAGE_PATH, (error, page) => {
 			if (error) {
 				console.error("[Hexium Catalog] Could not read index.html:", error);
