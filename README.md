@@ -32,14 +32,27 @@ GET /videos
 GET /videos?query=roblox
 GET /videos?order=viewCount
 GET /videos?query=roblox&order=relevance
+GET /videos?feed=shorts
+GET /videos?feed=live
+GET /videos?query=gaming&feed=shorts
 GET /health
 ```
 
-The website includes a Discover feed, Latest and Popular sorting, Gaming/Music/
-Technology shortcuts, a separate watch page with an up-next list, and a local
-Watch later list saved in the visitor's browser.
+The `/videos` feed supports `videos` (default), `shorts`, and `live`. Shorts
+search adds a `#shorts` hint and filters for videos up to three minutes long.
+The YouTube Data API does not expose a Shorts label or video orientation, so
+this is a best-effort Shorts-style feed rather than an exact copy of YouTube's
+Shorts classification. Video details include duration and view counts.
 
-The response contains up to 12 results in this shape:
+The website includes Home, Shorts, Live, Trending, Gaming/Music/Technology,
+Latest and Popular views, a separate watch page with an up-next list, and a
+local Watch later list saved in the visitor's browser. The Roblox catalog has
+Videos, Shorts, Live, Latest and Popular controls; it displays titles and links
+because Roblox cannot embed the YouTube player.
+
+The default video and live feeds return up to 12 results. Shorts searches up to
+50 candidates before filtering by duration, so its response can contain up to
+50 results. Each result has this shape:
 
 ```json
 {
@@ -50,7 +63,14 @@ The response contains up to 12 results in this shape:
       "channelTitle": "Channel",
       "publishedAt": "2026-01-01T00:00:00Z",
       "thumbnailUrl": "https://i.ytimg.com/vi/YouTubeVideoId/hqdefault.jpg",
-      "watchUrl": "https://www.youtube.com/watch?v=YouTubeVideoId"
+      "watchUrl": "https://www.youtube.com/watch?v=YouTubeVideoId",
+      "shortUrl": "https://www.youtube.com/shorts/YouTubeVideoId",
+      "duration": "PT2M10S",
+      "durationSeconds": 130,
+      "isShort": true,
+      "isLive": false,
+      "viewCount": "12345",
+      "likeCount": "321"
     }
   ]
 }
@@ -59,7 +79,8 @@ The response contains up to 12 results in this shape:
 ## Connect Roblox Studio 2021
 
 The server script in `ServerScriptService` requests `/videos` over HTTPS. It
-passes a search phrase using the `query` parameter when the player searches.
+passes a search phrase using the `query` parameter when the player searches,
+and a selected feed using `feed=shorts` or `feed=live`.
 The LocalScript in `StarterGui` displays those same YouTube results. Enable
 **Game Settings > Security > Allow HTTP Requests**.
 

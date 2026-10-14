@@ -10,7 +10,6 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 100;
 const catalogCache = new Map();
-const cacheOrder = [];
 
 function sendJson(response, statusCode, body) {
 	response.writeHead(statusCode, {
@@ -21,123 +20,166 @@ function sendJson(response, statusCode, body) {
 	response.end(JSON.stringify(body));
 }
 
-function fetchYouTubeVideos(query, order) {
-	if (!YOUTUBE_API_KEY) {
-		return Promise.resolve({
-			statusCode: 503,
-			body: { error: "YouTube search is not configured. Set YOUTUBE_API_KEY in the Render environment." },
-		});
-	}
-
-	const cacheKey = `${order}|${query.toLowerCase()}`;
-	const cached = catalogCache.get(cacheKey);
-	if (cached && cached.expiresAt > Date.now()) {
-		return Promise.resolve({ statusCode: 200, body: cached.body });
-	}
-	if (cached) {
-		catalogCache.delete(cacheKey);
-		const expiredIndex = cacheOrder.indexOf(cacheKey);
-		if (expiredIndex !== -1) {
-			cacheOrder.splice(expiredIndex, 1);
-		}
-	}
-
-	const apiUrl = new URL("https://www.googleapis.com/youtube/v3/search");
-	apiUrl.searchParams.set("part", "snippet");
-	apiUrl.searchParams.set("type", "video");
-	apiUrl.searchParams.set("maxResults", "12");
-	apiUrl.searchParams.set("order", order);
-	apiUrl.searchParams.set("videoEmbeddable", "true");
-	apiUrl.searchParams.set("safeSearch", "moderate");
-	apiUrl.searchParams.set("key", YOUTUBE_API_KEY);
-	if (query) {
-		apiUrl.searchParams.set("q", query);
-	}
-
-	return new Promise((resolve) => {
+function requestYouTubeJson(apiUrl) {
+	return new Promise((resolve, reject) => {
+		let settled = false;
 		const request = https.get(apiUrl, (upstreamResponse) => {
 			let responseBody = "";
 			upstreamResponse.setEncoding("utf8");
 
 			upstreamResponse.on("data", (chunk) => {
 				responseBody += chunk;
-				if (responseBody.length > 1024 * 1024) {
+				if (!settled && responseBody.length > 1024 * 1024) {
+					settled = true;
 					request.destroy(new Error("YouTube API response exceeded 1 MB."));
+					reject(new Error("YouTube API response exceeded 1 MB."));
 				}
 			});
 
 			upstreamResponse.on("end", () => {
-				let payload;
-				try {
-					payload = JSON.parse(responseBody);
-				} catch (error) {
-					console.error("[Hexium Catalog] YouTube API returned invalid JSON:", error);
-					resolve({ statusCode: 502, body: { error: "YouTube returned an invalid response." } });
-					return;
-				}
-
+				if (settled) return;
 				if (upstreamResponse.statusCode !== 200) {
-					const reason = payload.error && payload.error.message
-						? payload.error.message
-						: `HTTP ${upstreamResponse.statusCode}`;
-					console.error("[Hexium Catalog] YouTube API request failed:", reason);
-					resolve({ statusCode: 502, body: { error: "YouTube search failed. Check the API key and YouTube Data API quota." } });
+					let reason = `HTTP ${upstreamResponse.statusCode}`;
+					try {
+						const payload = JSON.parse(responseBody);
+						if (payload.error && payload.error.message) reason = payload.error.message;
+					} catch (error) {
+						console.error("[Hexium Catalog] YouTube API returned invalid error JSON:", error);
+					}
+					settled = true;
+					reject(new Error(reason));
 					return;
 				}
 
-				if (!Array.isArray(payload.items)) {
-					resolve({ statusCode: 502, body: { error: "YouTube returned an unexpected video list." } });
-					return;
+				try {
+					settled = true;
+					resolve(JSON.parse(responseBody));
+				} catch (error) {
+					settled = true;
+					reject(new Error("YouTube API returned invalid JSON."));
 				}
-
-				const videos = payload.items
-					.filter((item) =>
-						item &&
-						item.id &&
-						typeof item.id.videoId === "string" &&
-						item.snippet &&
-						typeof item.snippet.title === "string")
-					.map((item) => {
-						const videoId = item.id.videoId;
-						const thumbnails = item.snippet.thumbnails || {};
-						const thumbnail = thumbnails.high || thumbnails.medium || thumbnails.default;
-
-						return {
-							videoId,
-							title: item.snippet.title,
-							channelTitle: item.snippet.channelTitle || "",
-							publishedAt: item.snippet.publishedAt || "",
-							thumbnailUrl: thumbnail ? thumbnail.url : "",
-							watchUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`,
-						};
-					});
-
-				const result = {
-					statusCode: 200,
-					body: { videos },
-				};
-
-				while (catalogCache.size >= MAX_CACHE_ENTRIES) {
-					catalogCache.delete(cacheOrder.shift());
-				}
-				catalogCache.set(cacheKey, {
-					expiresAt: Date.now() + CACHE_TTL_MS,
-					body: result.body,
-				});
-				cacheOrder.push(cacheKey);
-
-				resolve(result);
 			});
 		});
 
-		request.setTimeout(12000, () => {
-			request.destroy(new Error("YouTube API request timed out."));
-		});
+		request.setTimeout(12000, () => request.destroy(new Error("YouTube API request timed out.")));
 		request.on("error", (error) => {
-			console.error("[Hexium Catalog] Could not reach YouTube API:", error.message);
-			resolve({ statusCode: 502, body: { error: "Could not reach YouTube. Try again shortly." } });
+			if (settled) return;
+			settled = true;
+			reject(error);
 		});
 	});
+}
+
+function durationInSeconds(value) {
+	const match = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(value || "");
+	if (!match) return 0;
+	return Number(match[1] || 0) * 3600 + Number(match[2] || 0) * 60 + Number(match[3] || 0);
+}
+
+async function fetchYouTubeVideos(query, order, feed) {
+	if (!YOUTUBE_API_KEY) {
+		return {
+			statusCode: 503,
+			body: { error: "YouTube search is not configured. Set YOUTUBE_API_KEY in the Render environment." },
+		};
+	}
+
+	const cacheKey = `${feed}|${order}|${query.toLowerCase()}`;
+	const cached = catalogCache.get(cacheKey);
+	if (cached && cached.expiresAt > Date.now()) {
+		return { statusCode: 200, body: cached.body };
+	}
+	if (cached) {
+		catalogCache.delete(cacheKey);
+	}
+
+	try {
+		const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+		searchUrl.searchParams.set("part", "snippet");
+		searchUrl.searchParams.set("type", "video");
+		searchUrl.searchParams.set("maxResults", feed === "shorts" ? "50" : "12");
+		searchUrl.searchParams.set("order", order);
+		searchUrl.searchParams.set("videoEmbeddable", "true");
+		searchUrl.searchParams.set("safeSearch", "moderate");
+		searchUrl.searchParams.set("key", YOUTUBE_API_KEY);
+		if (feed === "shorts") searchUrl.searchParams.set("videoDuration", "short");
+		if (feed === "live") searchUrl.searchParams.set("eventType", "live");
+		const searchQuery = feed === "shorts"
+			? `${query}${query ? " " : ""}#shorts`
+			: query;
+		if (searchQuery) searchUrl.searchParams.set("q", searchQuery);
+
+		const searchResult = await requestYouTubeJson(searchUrl);
+		if (!Array.isArray(searchResult.items)) {
+			throw new Error("YouTube returned an unexpected video list.");
+		}
+
+		const searchItems = searchResult.items.filter((item) =>
+			item &&
+			item.id &&
+			typeof item.id.videoId === "string" &&
+			item.snippet &&
+			typeof item.snippet.title === "string");
+		let detailsById = new Map();
+		if (searchItems.length > 0) {
+			const detailsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+			detailsUrl.searchParams.set("part", "contentDetails,statistics,liveStreamingDetails");
+			detailsUrl.searchParams.set("id", searchItems.map((item) => item.id.videoId).join(","));
+			detailsUrl.searchParams.set("key", YOUTUBE_API_KEY);
+			const detailsResult = await requestYouTubeJson(detailsUrl);
+			if (!Array.isArray(detailsResult.items)) {
+				throw new Error("YouTube returned unexpected video details.");
+			}
+			detailsById = new Map(detailsResult.items.map((item) => [item.id, item]));
+		}
+
+		const videos = searchItems
+			.map((item) => {
+				const videoId = item.id.videoId;
+				const details = detailsById.get(videoId) || {};
+				const thumbnails = item.snippet.thumbnails || {};
+				const thumbnail = thumbnails.maxres || thumbnails.high || thumbnails.medium || thumbnails.default;
+				const duration = details.contentDetails && details.contentDetails.duration || "";
+				const durationSeconds = durationInSeconds(duration);
+				const isLive = feed === "live"
+					|| Boolean(details.liveStreamingDetails
+						&& details.liveStreamingDetails.actualStartTime
+						&& !details.liveStreamingDetails.actualEndTime);
+				return {
+					videoId,
+					title: item.snippet.title,
+					channelTitle: item.snippet.channelTitle || "",
+					publishedAt: item.snippet.publishedAt || "",
+					thumbnailUrl: thumbnail ? thumbnail.url : "",
+					watchUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`,
+					shortUrl: `https://www.youtube.com/shorts/${encodeURIComponent(videoId)}`,
+					duration,
+					durationSeconds,
+					isShort: !isLive && durationSeconds > 0 && durationSeconds <= 180,
+					isLive,
+					viewCount: details.statistics && details.statistics.viewCount || "0",
+					likeCount: details.statistics && details.statistics.likeCount || "0",
+				};
+			})
+			.filter((video) => feed !== "shorts" || video.isShort);
+
+		const body = { videos };
+		catalogCache.delete(cacheKey);
+		while (catalogCache.size >= MAX_CACHE_ENTRIES) {
+			catalogCache.delete(catalogCache.keys().next().value);
+		}
+		catalogCache.set(cacheKey, {
+			expiresAt: Date.now() + CACHE_TTL_MS,
+			body,
+		});
+		return { statusCode: 200, body };
+	} catch (error) {
+		console.error("[Hexium Catalog] YouTube search failed:", error.message);
+		const errorMessage = error.message.includes("quota")
+			? "YouTube search quota exceeded. Try again later."
+			: "YouTube search failed. Check the API key, YouTube Data API access, and network connection.";
+		return { statusCode: 502, body: { error: errorMessage } };
+	}
 }
 
 const server = http.createServer((request, response) => {
@@ -166,12 +208,14 @@ const server = http.createServer((request, response) => {
 		const order = ["date", "viewCount", "relevance"].includes(requestedOrder)
 			? requestedOrder
 			: query ? "relevance" : "date";
+		const requestedFeed = requestUrl.searchParams.get("feed");
+		const feed = ["videos", "shorts", "live"].includes(requestedFeed) ? requestedFeed : "videos";
 		if (query.length > 100) {
 			sendJson(response, 400, { error: "Search query must be 100 characters or fewer." });
 			return;
 		}
 
-		fetchYouTubeVideos(query, order)
+		fetchYouTubeVideos(query, order, feed)
 			.then((result) => sendJson(response, result.statusCode, result.body))
 			.catch((error) => {
 				console.error("[Hexium Catalog] Unexpected video catalog error:", error);

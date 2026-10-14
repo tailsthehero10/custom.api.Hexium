@@ -123,14 +123,19 @@
 		.section-heading h2 { margin: 0; font-size: 17px; font-weight: 740; letter-spacing: -.35px; }
 		.section-heading span { color: #858791; font-size: 11px; }
 		.video-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 19px 14px; }
+		.video-grid.shorts-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 		.video-card { min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
 		.thumb-wrap { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #2c2d33; border-radius: 9px; background: #202126; }
+		.shorts-grid .thumb-wrap, .short-card .thumb-wrap { aspect-ratio: 9 / 16; }
 		.video-thumb, .thumb-fallback { display: grid; width: 100%; height: 100%; place-items: center; background: #25262b; color: #aaa; object-fit: cover; transition: transform .25s ease, filter .25s ease; }
 		.video-card:hover .video-thumb { transform: scale(1.045); filter: brightness(1.08); }
 		.thumb-play { position: absolute; inset: 0; display: grid; place-items: center; background: #0000; transition: background .18s; }
 		.thumb-play span { display: grid; width: 40px; height: 40px; place-items: center; transform: scale(.88); border: 1px solid #ffffff80; border-radius: 50%; background: #111c; color: #fff; font-size: 14px; opacity: 0; transition: opacity .18s, transform .18s; }
 		.video-card:hover .thumb-play { background: #0002; }
 		.video-card:hover .thumb-play span { transform: scale(1); opacity: 1; }
+		.video-badge { position: absolute; right: 7px; bottom: 7px; padding: 3px 5px; border-radius: 4px; background: #08090cdb; color: #fff; font-size: 9px; font-weight: 750; }
+		.video-badge.short { top: 7px; right: auto; bottom: auto; left: 7px; background: #db3045e8; }
+		.video-badge.live { top: 7px; right: auto; bottom: auto; left: 7px; background: #e32636; }
 		.card-body { display: grid; grid-template-columns: minmax(0, 1fr) 30px; gap: 6px; padding-top: 9px; }
 		.card-body > button.video-card { display: grid; width: 100%; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0; border: 0; border-radius: 0; background: transparent; text-align: left; }
 		.video-copy { min-width: 0; }
@@ -150,6 +155,8 @@
 		.watch-main { min-width: 0; }
 		.watch-frame, .watch-placeholder { display: grid; width: 100%; aspect-ratio: 16 / 9; place-items: center; overflow: hidden; border: 1px solid #2d2e34; border-radius: 10px; background: #050506; }
 		.watch-frame { display: block; border: 0; }
+		.watch-page.short-watch { grid-template-columns: minmax(0, 1fr) 320px; }
+		.short-watch .watch-frame, .short-watch .watch-placeholder { width: min(100%, 390px); aspect-ratio: 9 / 16; margin: 0 auto; }
 		.watch-placeholder { color: #999ba4; }
 		.watch-title { margin: 16px 0 7px; font-size: 20px; line-height: 1.35; }
 		.watch-meta { color: #a2a4ae; font-size: 12px; line-height: 1.55; }
@@ -175,6 +182,7 @@
 			.browser-body { grid-template-columns: 178px minmax(0, 1fr); }
 			.discovery-page { padding: 22px 21px 28px; }
 			.video-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+			.video-grid.shorts-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 			.watch-page { grid-template-columns: minmax(0, 1fr) 275px; padding-right: 21px; padding-left: 21px; }
 		}
 
@@ -197,6 +205,7 @@
 			.featured p { margin: 7px 0 11px; }
 			.featured-art { width: 155px; }
 			.video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.video-grid.shorts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 			.watch-page { display: flex; flex-direction: column; padding: 16px; }
 			.watch-side { margin-top: 4px; }
 			.watch-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -247,6 +256,8 @@
 			<nav class="sidebar" aria-label="Main navigation">
 				<div class="sidebar-label">Browse</div>
 				<button class="nav-item" type="button" data-view="home" aria-current="page"><span class="nav-icon">⌂</span>Home</button>
+				<button class="nav-item" type="button" data-view="shorts"><span class="nav-icon">▶</span>Shorts</button>
+				<button class="nav-item" type="button" data-view="live"><span class="nav-icon">●</span>Live</button>
 				<button class="nav-item" type="button" data-view="trending"><span class="nav-icon">↗</span>Trending</button>
 				<button class="nav-item" type="button" data-view="gaming"><span class="nav-icon">▣</span>Gaming</button>
 				<button class="nav-item" type="button" data-view="music"><span class="nav-icon">♫</span>Music</button>
@@ -292,6 +303,8 @@
 					<button class="pill active" type="button" data-filter="home">For you</button>
 					<button class="pill" type="button" data-filter="latest">Latest</button>
 					<button class="pill" type="button" data-filter="trending">Popular</button>
+					<button class="pill" type="button" data-filter="shorts">Shorts</button>
+					<button class="pill" type="button" data-filter="live">Live</button>
 					<span class="toolbar-spacer"></span>
 					<span class="result-count" id="result-count"></span>
 				</div>
@@ -364,6 +377,7 @@
 		let currentVideo = null;
 		let currentView = "home";
 		let currentFilter = "home";
+		let currentFeed = "videos";
 		let requestNumber = 0;
 		let savedVideos = loadSavedVideos();
 
@@ -395,6 +409,19 @@
 			if (!value) return "";
 			const date = new Date(value);
 			return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+		}
+
+		function durationLabel(seconds) {
+			if (!Number.isFinite(seconds) || seconds <= 0) return "";
+			const minutes = Math.floor(seconds / 60);
+			const remainder = seconds % 60;
+			return minutes ? `${minutes}:${String(remainder).padStart(2, "0")}` : `0:${String(remainder).padStart(2, "0")}`;
+		}
+
+		function countLabel(value) {
+			const count = Number(value);
+			if (!Number.isFinite(count) || count <= 0) return "";
+			return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(count) + " views";
 		}
 
 		function createThumbnail(video, className) {
@@ -456,6 +483,22 @@
 			const thumbnailWrap = document.createElement("span");
 			thumbnailWrap.className = "thumb-wrap";
 			thumbnailWrap.appendChild(createThumbnail(video, "video-thumb"));
+			if (video.isShort) {
+				const badge = document.createElement("span");
+				badge.className = "video-badge short";
+				badge.textContent = "SHORT";
+				thumbnailWrap.appendChild(badge);
+			} else if (video.isLive) {
+				const badge = document.createElement("span");
+				badge.className = "video-badge live";
+				badge.textContent = "LIVE";
+				thumbnailWrap.appendChild(badge);
+			} else if (video.durationSeconds) {
+				const badge = document.createElement("span");
+				badge.className = "video-badge";
+				badge.textContent = durationLabel(video.durationSeconds);
+				thumbnailWrap.appendChild(badge);
+			}
 			const playOverlay = document.createElement("span");
 			playOverlay.className = "thumb-play";
 			playOverlay.innerHTML = "<span aria-hidden=\"true\">▶</span>";
@@ -477,6 +520,12 @@
 				const date = document.createElement("span");
 				date.textContent = dateLabel(video.publishedAt);
 				meta.appendChild(date);
+			}
+			const views = countLabel(video.viewCount);
+			if (views) {
+				const viewCount = document.createElement("span");
+				viewCount.textContent = views;
+				meta.appendChild(viewCount);
 			}
 			copy.appendChild(meta);
 			selectButton.appendChild(copy);
@@ -501,23 +550,27 @@
 
 		function renderVideos(videos) {
 			videoGrid.replaceChildren();
+			videoGrid.classList.toggle("shorts-grid", currentFeed === "shorts");
 			emptyState.hidden = videos.length !== 0;
 
 			if (videos.length === 0) {
 				const savedView = currentView === "saved";
 				const title = document.createElement("strong");
-				title.textContent = savedView ? "Nothing saved yet" : "No videos found";
+				title.textContent = savedView ? "Nothing saved yet" : currentFeed === "shorts" ? "No Shorts-style videos found" : currentFeed === "live" ? "No live videos found" : "No videos found";
 				const message = document.createElement("span");
 				message.textContent = savedView
 					? "Save videos with the star button and they’ll be waiting here."
-					: "Try a different search, or choose another browse category.";
+					: currentFeed === "shorts"
+						? "Try another search. Shorts are estimated from videos up to three minutes long; YouTube’s API does not provide a Shorts label."
+						: "Try a different search, or choose another browse category.";
 				emptyState.replaceChildren(title, message);
-				resultCount.textContent = "0 videos";
+				resultCount.textContent = currentFeed === "shorts" ? "0 Shorts" : "0 videos";
 				return;
 			}
 
 			videos.forEach((video) => videoGrid.appendChild(createVideoCard(video, false)));
-			resultCount.textContent = `${videos.length} ${videos.length === 1 ? "video" : "videos"}`;
+			const kind = currentFeed === "shorts" ? "Shorts" : currentFeed === "live" ? "live videos" : "videos";
+			resultCount.textContent = `${videos.length} ${kind}`;
 		}
 
 		function showFeatured(video) {
@@ -553,10 +606,13 @@
 			player.hidden = false;
 			watchPlaceholder.hidden = true;
 			playerTitle.textContent = video.title;
-			playerDetails.textContent = [video.channelTitle || "YouTube", dateLabel(video.publishedAt)]
+			playerDetails.textContent = [video.channelTitle || "YouTube", dateLabel(video.publishedAt), durationLabel(video.durationSeconds), countLabel(video.viewCount)]
 				.filter(Boolean)
 				.join(" · ");
-			openYoutubeLink.href = `https://www.youtube.com/watch?v=${encodeURIComponent(video.videoId)}`;
+			openYoutubeLink.href = video.isShort
+				? `https://www.youtube.com/shorts/${encodeURIComponent(video.videoId)}`
+				: `https://www.youtube.com/watch?v=${encodeURIComponent(video.videoId)}`;
+			watchPage.classList.toggle("short-watch", Boolean(video.isShort));
 			updateSaveCurrentButton();
 			renderUpNext(video.videoId);
 			discoveryPage.hidden = true;
@@ -576,6 +632,7 @@
 			player.hidden = true;
 			watchPlaceholder.hidden = false;
 			watchPage.hidden = true;
+			watchPage.classList.remove("short-watch");
 			if (currentView === "uploads") {
 				uploadsPage.hidden = false;
 			} else {
@@ -600,19 +657,21 @@
 			});
 		}
 
-		async function loadVideos(query, order) {
+		async function loadVideos(query, order, feed) {
+			currentFeed = feed || currentFeed;
 			const requestId = ++requestNumber;
 			currentView = currentView === "saved" ? "saved" : "home";
 			statusLabel.classList.remove("error");
 			setStatus("Finding videos for you...");
 			videoGrid.replaceChildren();
 			emptyState.hidden = true;
-			featured.hidden = Boolean(query);
+			featured.hidden = Boolean(query) || currentFeed !== "videos";
 
 			try {
 				const endpoint = new URL("/videos", window.location.origin);
 				if (query) endpoint.searchParams.set("query", query);
 				if (order) endpoint.searchParams.set("order", order);
+				endpoint.searchParams.set("feed", currentFeed);
 
 				const response = await fetch(endpoint);
 				const responseBody = await response.text();
@@ -647,6 +706,7 @@
 			currentView = view;
 			setActiveNavigation(view);
 			watchPage.hidden = true;
+			watchPage.classList.remove("short-watch");
 			player.src = "";
 			currentVideo = null;
 			uploadsPage.hidden = view !== "uploads";
@@ -655,6 +715,7 @@
 				return;
 			}
 
+			currentFeed = view === "shorts" ? "shorts" : view === "live" ? "live" : "videos";
 			featured.hidden = view === "saved";
 			searchQuery.value = "";
 			if (view === "saved") {
@@ -672,7 +733,21 @@
 				sectionTitle.textContent = "Trending on YouTube";
 				sectionSubtitle.textContent = "Popular right now";
 				setActiveFilter("trending");
-				loadVideos("", "viewCount");
+				loadVideos("", "viewCount", "videos");
+			} else if (view === "shorts") {
+				pageTitle.textContent = "Shorts";
+				pageSubtitle.textContent = "Quick, vertical-style videos from YouTube.";
+				sectionTitle.textContent = "Shorts-style picks";
+				sectionSubtitle.textContent = "Short-duration videos";
+				setActiveFilter("shorts");
+				loadVideos("", "date", "shorts");
+			} else if (view === "live") {
+				pageTitle.textContent = "Live";
+				pageSubtitle.textContent = "Watch live videos being streamed on YouTube.";
+				sectionTitle.textContent = "Live on YouTube";
+				sectionSubtitle.textContent = "Streaming now";
+				setActiveFilter("live");
+				loadVideos("", "date", "live");
 			} else if (view === "gaming" || view === "music" || view === "technology") {
 				const labels = { gaming: "Gaming", music: "Music", technology: "Technology" };
 				pageTitle.textContent = `${labels[view]} videos`;
@@ -680,14 +755,14 @@
 				sectionTitle.textContent = `Explore ${labels[view]}`;
 				sectionSubtitle.textContent = "YouTube search";
 				setActiveFilter("");
-				loadVideos(labels[view], "relevance");
+				loadVideos(labels[view], "relevance", "videos");
 			} else {
 				pageTitle.textContent = "Discover videos";
 				pageSubtitle.textContent = "Fresh picks from YouTube, collected in one place.";
 				sectionTitle.textContent = "Picked for you";
 				sectionSubtitle.textContent = "From YouTube";
 				setActiveFilter("home");
-				loadVideos("", "date");
+				loadVideos("", "date", "videos");
 			}
 		}
 
@@ -697,6 +772,8 @@
 		document.querySelectorAll(".pill[data-filter]").forEach((button) => {
 			button.addEventListener("click", () => {
 				if (button.dataset.filter === "trending") browse("trending");
+				else if (button.dataset.filter === "shorts") browse("shorts");
+				else if (button.dataset.filter === "live") browse("live");
 				else if (button.dataset.filter === "latest") {
 					currentView = "home";
 					setActiveNavigation("home");
@@ -705,7 +782,7 @@
 					sectionTitle.textContent = "Latest videos";
 					sectionSubtitle.textContent = "Just uploaded";
 					setActiveFilter("latest");
-					loadVideos("", "date");
+					loadVideos("", "date", "videos");
 				} else {
 					browse("home");
 				}
@@ -721,7 +798,7 @@
 			sectionTitle.textContent = query ? "Search results" : "Picked for you";
 			sectionSubtitle.textContent = query ? "From YouTube" : "From YouTube";
 			setActiveFilter("");
-			loadVideos(query, query ? "relevance" : "date");
+			loadVideos(query, query ? "relevance" : "date", currentFeed);
 		});
 
 		document.getElementById("featured-browse").addEventListener("click", () => {
