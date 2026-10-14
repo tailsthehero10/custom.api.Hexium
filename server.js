@@ -10,6 +10,7 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 100;
 const catalogCache = new Map();
+const cacheOrder = [];
 
 function sendJson(response, statusCode, body) {
 	response.writeHead(statusCode, {
@@ -20,7 +21,7 @@ function sendJson(response, statusCode, body) {
 	response.end(JSON.stringify(body));
 }
 
-function fetchYouTubeVideos(query) {
+function fetchYouTubeVideos(query, order) {
 	if (!YOUTUBE_API_KEY) {
 		return Promise.resolve({
 			statusCode: 503,
@@ -28,7 +29,7 @@ function fetchYouTubeVideos(query) {
 		});
 	}
 
-	const cacheKey = query.toLowerCase();
+	const cacheKey = `${order}|${query.toLowerCase()}`;
 	const cached = catalogCache.get(cacheKey);
 	if (cached && cached.expiresAt > Date.now()) {
 		return Promise.resolve({ statusCode: 200, body: cached.body });
@@ -45,7 +46,7 @@ function fetchYouTubeVideos(query) {
 	apiUrl.searchParams.set("part", "snippet");
 	apiUrl.searchParams.set("type", "video");
 	apiUrl.searchParams.set("maxResults", "12");
-	apiUrl.searchParams.set("order", query ? "relevance" : "date");
+	apiUrl.searchParams.set("order", order);
 	apiUrl.searchParams.set("videoEmbeddable", "true");
 	apiUrl.searchParams.set("safeSearch", "moderate");
 	apiUrl.searchParams.set("key", YOUTUBE_API_KEY);
@@ -123,6 +124,7 @@ function fetchYouTubeVideos(query) {
 					expiresAt: Date.now() + CACHE_TTL_MS,
 					body: result.body,
 				});
+				cacheOrder.push(cacheKey);
 
 				resolve(result);
 			});
@@ -160,12 +162,16 @@ const server = http.createServer((request, response) => {
 
 	if (requestUrl.pathname === "/videos") {
 		const query = (requestUrl.searchParams.get("query") || "").trim();
+		const requestedOrder = requestUrl.searchParams.get("order");
+		const order = ["date", "viewCount", "relevance"].includes(requestedOrder)
+			? requestedOrder
+			: query ? "relevance" : "date";
 		if (query.length > 100) {
 			sendJson(response, 400, { error: "Search query must be 100 characters or fewer." });
 			return;
 		}
 
-		fetchYouTubeVideos(query)
+		fetchYouTubeVideos(query, order)
 			.then((result) => sendJson(response, result.statusCode, result.body))
 			.catch((error) => {
 				console.error("[Hexium Catalog] Unexpected video catalog error:", error);

@@ -3,145 +3,231 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="Search and watch YouTube videos with Hexium">
-	<title>Hexium Web</title>
+	<meta name="description" content="Discover and watch YouTube videos with Hexium">
+	<meta name="theme-color" content="#111216">
+	<title>Hexium Web — Video</title>
 	<style>
 		:root {
 			color-scheme: dark;
-			font-family: Arial, Helvetica, sans-serif;
-			background: #090a0c;
-			color: #f5f5f5;
+			font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			background: #0b0c0f;
+			color: #f5f6f8;
 			font-synthesis: none;
 			text-rendering: optimizeLegibility;
+			--surface: #141519;
+			--surface-raised: #1b1c21;
+			--surface-hover: #25262c;
+			--border: #2b2c32;
+			--muted: #a2a4ae;
+			--accent: #ff3d35;
+			--purple: #a65af1;
 		}
 
 		* { box-sizing: border-box; }
 		[hidden] { display: none !important; }
-		body { min-width: 340px; min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 0%, #202126 0, #101114 48%, #090a0c 100%); }
-		button, input { font: inherit; }
-		button { color: inherit; }
+		body { min-width: 350px; min-height: 100vh; margin: 0; background: radial-gradient(ellipse at 60% -20%, #27222b 0, #121318 45%, #0b0c0f 78%); }
+		button, input { color: inherit; font: inherit; }
+		button { cursor: pointer; }
 
 		.browser-window {
 			display: flex;
-			width: min(1440px, 92vw);
-			height: min(900px, 88vh);
-			min-height: 540px;
+			width: min(1540px, 94vw);
+			height: min(960px, 92vh);
+			min-height: 600px;
 			flex-direction: column;
+			margin: 4vh auto;
 			overflow: hidden;
-			border: 1px solid #38393f;
-			border-radius: 12px;
-			background: #121316;
-			box-shadow: 0 28px 100px #000a;
+			border: 1px solid #36373e;
+			border-radius: 14px;
+			background: #111216;
+			box-shadow: 0 32px 110px #0009, 0 2px 12px #ffffff08 inset;
 		}
 
 		.topbar {
-			z-index: 1;
+			z-index: 3;
 			display: flex;
 			height: 68px;
 			min-height: 68px;
 			align-items: center;
-			gap: 14px;
-			padding: 0 18px 0 24px;
-			border-bottom: 1px solid #38393f;
-			background: #1e1f23;
+			gap: 18px;
+			padding: 0 22px;
+			border-bottom: 1px solid var(--border);
+			background: #1a1b20;
 		}
 
-		.brand { display: flex; min-width: 190px; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
-		.brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 9px; background: #e62117; font-size: 18px; font-weight: 800; }
-		.brand-copy { font-size: 19px; font-weight: 700; letter-spacing: -.35px; }
-		.topbar-spacer { flex: 1; }
-		.top-link { padding: 9px 13px; border: 1px solid #48494f; border-radius: 7px; background: #303136; color: #f5f5f5; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; transition: background .15s ease; }
-		.top-link:hover { background: #414249; }
-		.close-look { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 7px; background: #c43b3b; color: #fff; font-size: 18px; font-weight: 700; text-decoration: none; }
-		.close-look:hover { background: #df4a4a; }
+		.brand { display: flex; min-width: 190px; align-items: center; gap: 11px; color: #fff; text-decoration: none; }
+		.brand-mark { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: linear-gradient(145deg, #ff5248, #d91f28); box-shadow: 0 4px 16px #e72a303d; font-size: 19px; font-weight: 900; }
+		.brand-name { font-size: 18px; font-weight: 760; letter-spacing: -.45px; }
+		.brand-caption { display: block; margin-top: 2px; color: #9b9da6; font-size: 10px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; }
+		.topbar-space { flex: 1; }
+		.top-link { display: inline-flex; min-height: 36px; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid #3c3d44; border-radius: 8px; background: #24252a; color: #e9e9eb; font-size: 12px; font-weight: 680; text-decoration: none; white-space: nowrap; transition: background .16s, border-color .16s, transform .16s; }
+		.top-link:hover { transform: translateY(-1px); border-color: #5a5b63; background: #303137; }
+		.top-link .external-icon { color: #a5a7b0; font-size: 14px; }
+		.window-close { display: grid; width: 35px; height: 35px; place-items: center; border: 0; border-radius: 8px; background: #bd3737; color: white; font-size: 20px; text-decoration: none; transition: background .15s; }
+		.window-close:hover { background: #e14747; }
 
-		.browser-body { display: grid; min-height: 0; flex: 1; grid-template-columns: 190px minmax(0, 1fr); }
-		.sidebar { display: flex; flex-direction: column; gap: 9px; padding: 22px 13px; border-right: 1px solid #303137; background: #191a1e; }
-		.sidebar-label { margin: 2px 9px 8px; color: #898b93; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
-		.tab-button { display: flex; min-height: 44px; align-items: center; gap: 11px; padding: 0 12px; border: 0; border-radius: 7px; background: #292a2f; color: #e7e7e9; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; transition: background .15s ease; }
-		.tab-button:hover { background: #37383e; }
-		.tab-button[aria-selected="true"] { background: #df211b; color: #fff; }
-		.tab-button.uploads[aria-selected="true"] { background: #8438cf; }
-		.tab-icon { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 6px; background: #ffffff18; font-size: 12px; }
-		.sidebar-note { margin: auto 8px 2px; color: #777981; font-size: 12px; line-height: 1.55; }
+		.browser-body { display: grid; min-height: 0; flex: 1; grid-template-columns: 205px minmax(0, 1fr); }
+		.sidebar { display: flex; min-height: 0; flex-direction: column; gap: 7px; padding: 22px 13px 16px; border-right: 1px solid var(--border); background: #17181c; }
+		.sidebar-label { margin: 4px 10px 9px; color: #888a94; font-size: 10px; font-weight: 750; letter-spacing: 1.15px; text-transform: uppercase; }
+		.sidebar-divider { height: 1px; margin: 11px 6px 10px; background: var(--border); }
+		.nav-item { display: flex; min-height: 42px; align-items: center; gap: 11px; padding: 0 11px; border: 0; border-radius: 8px; background: transparent; color: #c6c7cc; font-size: 13px; font-weight: 620; text-align: left; transition: background .15s, color .15s; }
+		.nav-item:hover { background: #25262c; color: white; }
+		.nav-item[aria-current="page"] { background: #352122; color: #ff746d; }
+		.nav-item.purple[aria-current="page"] { background: #2d2038; color: #c994ff; }
+		.nav-icon { display: grid; width: 23px; height: 23px; flex: 0 0 23px; place-items: center; border-radius: 7px; background: #ffffff0b; color: #bbbcc3; font-size: 13px; }
+		.nav-item[aria-current="page"] .nav-icon { background: #ff3d3520; color: #ff746d; }
+		.nav-item.purple[aria-current="page"] .nav-icon { background: #a65af122; color: #c994ff; }
+		.sidebar-spacer { flex: 1; }
+		.sidebar-promo { margin: 8px 2px 0; padding: 13px; border: 1px solid #333139; border-radius: 10px; background: linear-gradient(145deg, #24212b, #1c1b20); }
+		.sidebar-promo strong { display: block; margin-bottom: 5px; color: #ddd3e9; font-size: 12px; }
+		.sidebar-promo span { display: block; color: #9895a0; font-size: 11px; line-height: 1.5; }
+		.sidebar-footer { margin: 5px 8px 0; color: #696b74; font-size: 10px; }
 
-		.page { display: flex; min-width: 0; min-height: 0; flex-direction: column; padding: 22px 26px 24px; overflow: auto; }
-		.youtube-page { gap: 16px; }
-		.page-heading { display: flex; min-height: 42px; align-items: center; gap: 12px; }
-		.page-heading h1 { margin: 0; font-size: 24px; letter-spacing: -.45px; }
-		.youtube-logo { color: #ff3931; font-size: 22px; }
-		.search-form { display: flex; width: min(510px, 58%); height: 40px; margin-left: auto; }
-		.search-form input { min-width: 0; flex: 1; padding: 0 15px; border: 1px solid #48494f; border-right: 0; border-radius: 8px 0 0 8px; outline: none; background: #111215; color: #fff; }
-		.search-form input:focus { border-color: #9698a1; }
-		.search-form input::placeholder { color: #93959d; }
-		.search-form button { width: 82px; border: 1px solid #48494f; border-radius: 0 8px 8px 0; background: #34353a; font-weight: 700; cursor: pointer; }
-		.search-form button:hover { background: #44454b; }
-		.status { min-height: 18px; margin: -8px 0 -2px; color: #a3a4ab; font-size: 13px; }
+		.page { min-width: 0; min-height: 0; overflow: auto; }
+		.discovery-page { padding: 24px 28px 32px; }
+		.discovery-head { display: flex; align-items: center; gap: 18px; }
+		.heading-copy { min-width: 0; }
+		.eyebrow { margin-bottom: 5px; color: #ff7770; font-size: 10px; font-weight: 780; letter-spacing: 1.4px; text-transform: uppercase; }
+		.discovery-head h1 { margin: 0; font-size: clamp(24px, 2.4vw, 31px); font-weight: 780; letter-spacing: -.85px; }
+		.discovery-head p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+		.search-form { display: flex; width: min(460px, 48%); height: 42px; margin-left: auto; }
+		.search-form input { width: 0; min-width: 0; flex: 1; padding: 0 15px; border: 1px solid #414249; border-right: 0; border-radius: 9px 0 0 9px; outline: none; background: #0f1013; color: #fff; font-size: 13px; }
+		.search-form input::placeholder { color: #858791; }
+		.search-form input:focus { border-color: #777982; }
+		.search-form button { display: flex; width: 88px; align-items: center; justify-content: center; gap: 7px; border: 1px solid #414249; border-radius: 0 9px 9px 0; background: #292a30; color: #eeeef0; font-size: 12px; font-weight: 700; transition: background .15s; }
+		.search-form button:hover { background: #393a42; }
 
-		.watch-layout { display: grid; min-height: 0; flex: 1; grid-template-columns: minmax(0, 1.8fr) minmax(270px, .9fr); gap: 21px; }
-		.player-column { display: flex; min-width: 0; flex-direction: column; }
-		.player-frame, .player-placeholder { width: 100%; aspect-ratio: 16 / 9; flex: 0 0 auto; border: 0; border-radius: 9px; background: #080809; }
-		.player-placeholder { display: grid; place-items: center; border: 1px solid #33343a; color: #9b9da5; font-size: 14px; }
-		.player-title { margin: 15px 0 7px; font-size: 19px; line-height: 1.35; }
-		.player-details { color: #a4a5ac; font-size: 13px; line-height: 1.5; }
-		.results-column { display: flex; min-height: 0; flex-direction: column; }
-		.results-heading { margin: 0 0 12px; color: #dadbe0; font-size: 15px; font-weight: 700; }
-		.video-list { display: flex; min-height: 0; flex-direction: column; gap: 12px; overflow: auto; padding: 0 5px 6px 0; }
-		.video-card { display: grid; width: 100%; grid-template-columns: minmax(105px, 43%) minmax(0, 1fr); gap: 11px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-		.video-card:hover .video-title { color: #ff7770; }
-		.video-card:focus-visible, .tab-button:focus-visible, .top-link:focus-visible, .close-look:focus-visible { outline: 2px solid #ff6b63; outline-offset: 2px; }
-		.video-thumb, .thumbnail-placeholder { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 7px; background: #292a2f; object-fit: cover; }
-		.thumbnail-placeholder { display: grid; place-items: center; color: #9698a0; font-size: 12px; }
-		.video-copy { min-width: 0; padding-top: 2px; }
-		.video-title { display: -webkit-box; margin: 0 0 7px; overflow: hidden; color: #eeeef0; font-size: 13px; font-weight: 700; line-clamp: 3; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-		.video-meta { display: flex; flex-direction: column; gap: 4px; color: #999ba3; font-size: 11px; line-height: 1.4; }
+		.featured { position: relative; display: grid; min-height: 185px; grid-template-columns: minmax(0, 1.3fr) minmax(210px, .7fr); align-items: center; gap: 18px; margin-top: 24px; padding: 21px 23px; overflow: hidden; border: 1px solid #42313a; border-radius: 13px; background: radial-gradient(ellipse at 90% 20%, #63333370 0, transparent 45%), linear-gradient(110deg, #271a20, #22191f 50%, #19191e); }
+		.featured::after { position: absolute; top: -90px; right: 18%; width: 220px; height: 220px; border: 1px solid #ff6c5520; border-radius: 50%; box-shadow: 0 0 0 28px #ff6c5509, 0 0 0 58px #ff6c5506; content: ""; pointer-events: none; }
+		.featured-copy, .featured-art { position: relative; z-index: 1; }
+		.featured-tag { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 11px; color: #ff9c91; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+		.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff554d; box-shadow: 0 0 10px #ff554d; }
+		.featured h2 { max-width: 610px; margin: 0; font-size: clamp(20px, 2vw, 27px); letter-spacing: -.7px; line-height: 1.22; }
+		.featured p { max-width: 570px; margin: 8px 0 16px; color: #c0b3b7; font-size: 12px; line-height: 1.55; }
+		.featured-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+		.action-button { display: inline-flex; min-height: 35px; align-items: center; justify-content: center; gap: 8px; padding: 0 13px; border: 1px solid #5b3a3e; border-radius: 7px; background: #e7302a; color: white; font-size: 11px; font-weight: 760; transition: background .15s, transform .15s; }
+		.action-button:hover { transform: translateY(-1px); background: #f4423b; }
+		.action-button.secondary { border-color: #554047; background: #ffffff0a; color: #eee1e3; }
+		.action-button.secondary:hover { background: #ffffff15; }
+		.featured-art { display: grid; width: min(100%, 255px); aspect-ratio: 16 / 9; justify-self: end; place-items: center; overflow: hidden; border: 1px solid #ffffff1e; border-radius: 10px; background: linear-gradient(145deg, #583038, #261d25 68%); }
+		.featured-art img { width: 100%; height: 100%; object-fit: cover; }
+		.featured-art .art-placeholder { display: grid; width: 100%; height: 100%; place-items: center; color: #f0b7ad; font-size: 44px; }
 
-		.uploads-page { align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #211a29, #151419 70%); text-align: center; }
-		.uploads-icon { display: grid; width: 86px; height: 86px; place-items: center; border-radius: 24px; background: #8438cf24; color: #c581ff; font-size: 42px; }
-		.uploads-page h1 { margin: 22px 0 9px; color: #d7adff; font-size: 30px; }
-		.uploads-page p { max-width: 440px; margin: 0; color: #a6a1ad; font-size: 15px; line-height: 1.65; }
+		.content-toolbar { display: flex; min-height: 52px; align-items: center; gap: 9px; margin-top: 18px; border-bottom: 1px solid #292a30; }
+		.pill { min-height: 29px; padding: 0 12px; border: 1px solid transparent; border-radius: 7px; background: #25262b; color: #c6c7cc; font-size: 11px; font-weight: 680; transition: background .15s, color .15s; }
+		.pill:hover { background: #34353b; color: white; }
+		.pill.active { border-color: #62403f; background: #412625; color: #ffb5af; }
+		.toolbar-spacer { flex: 1; }
+		.result-count { color: #858791; font-size: 11px; white-space: nowrap; }
+		.section-heading { display: flex; align-items: baseline; gap: 9px; margin: 17px 0 13px; }
+		.section-heading h2 { margin: 0; font-size: 17px; font-weight: 740; letter-spacing: -.35px; }
+		.section-heading span { color: #858791; font-size: 11px; }
+		.video-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 19px 14px; }
+		.video-card { min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
+		.thumb-wrap { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid #2c2d33; border-radius: 9px; background: #202126; }
+		.video-thumb, .thumb-fallback { display: grid; width: 100%; height: 100%; place-items: center; background: #25262b; color: #aaa; object-fit: cover; transition: transform .25s ease, filter .25s ease; }
+		.video-card:hover .video-thumb { transform: scale(1.045); filter: brightness(1.08); }
+		.thumb-play { position: absolute; inset: 0; display: grid; place-items: center; background: #0000; transition: background .18s; }
+		.thumb-play span { display: grid; width: 40px; height: 40px; place-items: center; transform: scale(.88); border: 1px solid #ffffff80; border-radius: 50%; background: #111c; color: #fff; font-size: 14px; opacity: 0; transition: opacity .18s, transform .18s; }
+		.video-card:hover .thumb-play { background: #0002; }
+		.video-card:hover .thumb-play span { transform: scale(1); opacity: 1; }
+		.card-body { display: grid; grid-template-columns: minmax(0, 1fr) 30px; gap: 6px; padding-top: 9px; }
+		.card-body > button.video-card { display: grid; width: 100%; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0; border: 0; border-radius: 0; background: transparent; text-align: left; }
+		.video-copy { min-width: 0; }
+		.video-title { display: -webkit-box; min-height: 38px; margin: 0 0 6px; overflow: hidden; color: #f1f1f3; font-size: 12px; font-weight: 680; line-height: 1.48; line-clamp: 2; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+		.video-meta { display: flex; flex-direction: column; gap: 3px; color: #9698a1; font-size: 10px; line-height: 1.4; }
+		.save-button { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #989aa3; font-size: 16px; transition: color .15s, background .15s; }
+		.save-button:hover { background: #292a30; color: #fff; }
+		.save-button.saved { color: #f5bb67; }
+		.video-card:focus-visible, .nav-item:focus-visible, .pill:focus-visible, .action-button:focus-visible, .save-button:focus-visible, .top-link:focus-visible, .window-close:focus-visible { outline: 2px solid #ff726b; outline-offset: 2px; }
 
-		@media (max-width: 900px) {
-			.browser-window { width: 96vw; height: 94vh; }
-			.browser-body { grid-template-columns: 154px minmax(0, 1fr); }
-			.watch-layout { grid-template-columns: minmax(0, 1.35fr) minmax(235px, .9fr); gap: 14px; }
-			.page { padding: 18px; }
-			.brand { min-width: 155px; }
-			.topbar { padding: 0 12px; gap: 8px; }
-			.top-link { padding: 8px 9px; font-size: 12px; }
+		.status-line { min-height: 22px; margin: 15px 0 0; color: #a2a4ae; font-size: 11px; }
+		.status-line.error { color: #ff8f89; }
+		.empty-state { display: grid; min-height: 230px; place-items: center; padding: 30px; border: 1px dashed #393a42; border-radius: 11px; color: #a3a5ad; text-align: center; }
+		.empty-state strong { display: block; margin-bottom: 7px; color: #e2e2e5; font-size: 15px; }
+
+		.watch-page { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 320px; gap: 23px; padding: 24px 28px 28px; }
+		.watch-main { min-width: 0; }
+		.watch-frame, .watch-placeholder { display: grid; width: 100%; aspect-ratio: 16 / 9; place-items: center; overflow: hidden; border: 1px solid #2d2e34; border-radius: 10px; background: #050506; }
+		.watch-frame { display: block; border: 0; }
+		.watch-placeholder { color: #999ba4; }
+		.watch-title { margin: 16px 0 7px; font-size: 20px; line-height: 1.35; }
+		.watch-meta { color: #a2a4ae; font-size: 12px; line-height: 1.55; }
+		.watch-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+		.watch-side { min-width: 0; }
+		.watch-side h2 { margin: 3px 0 14px; font-size: 15px; }
+		.watch-list { display: flex; flex-direction: column; gap: 13px; }
+		.watch-list .video-card { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; }
+		.watch-list .card-body { display: block; padding-top: 1px; }
+		.watch-list .video-title { min-height: auto; font-size: 11px; }
+		.back-button { display: inline-flex; min-height: 33px; align-items: center; gap: 7px; margin-bottom: 13px; padding: 0 11px; border: 1px solid #393a41; border-radius: 7px; background: #202126; color: #d4d5da; font-size: 11px; font-weight: 680; }
+		.back-button:hover { background: #2c2d33; }
+
+		.uploads-page { display: grid; min-height: 100%; place-items: center; padding: 35px; background: radial-gradient(ellipse at 50% 43%, #33203d 0, #17151b 42%, #111216 74%); text-align: center; }
+		.uploads-card { max-width: 530px; padding: 38px 28px; }
+		.uploads-icon { display: grid; width: 76px; height: 76px; margin: 0 auto 20px; place-items: center; border: 1px solid #aa6bdd4a; border-radius: 23px; background: #a65af11b; color: #d0a1ff; font-size: 33px; box-shadow: 0 0 45px #a65af11e; }
+		.uploads-page h1 { margin: 0 0 10px; color: #debaff; font-size: 27px; letter-spacing: -.55px; }
+		.uploads-page p { margin: 0 auto 20px; color: #b0a9b9; font-size: 13px; line-height: 1.7; }
+		.uploads-page .action-button { border-color: #7547a0; background: #713cb0; }
+
+		@media (max-width: 1160px) {
+			.browser-window { width: 96vw; }
+			.browser-body { grid-template-columns: 178px minmax(0, 1fr); }
+			.discovery-page { padding: 22px 21px 28px; }
+			.video-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+			.watch-page { grid-template-columns: minmax(0, 1fr) 275px; padding-right: 21px; padding-left: 21px; }
 		}
 
-		@media (max-width: 650px) {
-			body { display: block; }
-			.browser-window { width: 100%; height: 100dvh; min-height: 500px; border: 0; border-radius: 0; }
-			.topbar { height: 58px; min-height: 58px; }
+		@media (max-width: 820px) {
+			.browser-window { width: 100%; height: 100vh; height: 100dvh; min-height: 550px; margin: 0; border: 0; border-radius: 0; }
+			.topbar { height: 60px; min-height: 60px; padding: 0 13px; gap: 9px; }
 			.brand { min-width: 0; }
-			.brand-copy { font-size: 16px; }
-			.brand-mark { width: 30px; height: 30px; }
-			.top-link { padding: 7px; font-size: 11px; }
-			.close-look { width: 30px; height: 30px; }
-			.browser-body { grid-template-columns: 112px minmax(0, 1fr); }
-			.sidebar { gap: 7px; padding: 16px 8px; }
-			.sidebar-label { margin: 2px 4px 7px; font-size: 9px; }
-			.tab-button { min-height: 42px; gap: 6px; padding: 0 7px; font-size: 11px; }
-			.tab-icon { width: 18px; height: 18px; flex: 0 0 18px; font-size: 10px; }
-			.sidebar-note { margin-right: 3px; margin-left: 3px; font-size: 10px; }
-			.page { padding: 14px 12px; }
-			.page-heading { flex-wrap: wrap; gap: 8px; }
-			.page-heading h1 { font-size: 20px; }
-			.search-form { width: 100%; height: 38px; order: 2; }
-			.status { margin: 0; }
-			.watch-layout { display: flex; flex-direction: column; overflow: visible; }
-			.results-column { min-height: 300px; }
-			.video-list { overflow: visible; }
-			.video-card { grid-template-columns: minmax(110px, 40%) minmax(0, 1fr); }
+			.brand-name { font-size: 15px; }
+			.brand-caption { font-size: 8px; }
+			.brand-mark { width: 32px; height: 32px; }
+			.top-link { min-height: 32px; padding: 0 8px; font-size: 10px; }
+			.window-close { width: 31px; height: 31px; }
+			.browser-body { grid-template-columns: 145px minmax(0, 1fr); }
+			.sidebar { padding: 17px 9px 12px; }
+			.sidebar-promo { padding: 10px; }
+			.discovery-page { padding: 18px 16px 24px; }
+			.discovery-head { flex-wrap: wrap; gap: 12px; }
+			.search-form { width: 100%; margin: 0; }
+			.featured { min-height: 155px; grid-template-columns: minmax(0, 1fr) 155px; padding: 17px; }
+			.featured p { margin: 7px 0 11px; }
+			.featured-art { width: 155px; }
+			.video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.watch-page { display: flex; flex-direction: column; padding: 16px; }
+			.watch-side { margin-top: 4px; }
+			.watch-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 		}
 
-		@media (max-width: 390px) {
-			.browser-body { grid-template-columns: 96px minmax(0, 1fr); }
-			.tab-button { font-size: 10px; }
-			.top-link { padding: 6px; font-size: 10px; }
-			.brand-copy { font-size: 14px; }
+		@media (max-width: 540px) {
+			.browser-body { grid-template-columns: 60px minmax(0, 1fr); }
+			.sidebar { align-items: center; padding: 15px 5px; }
+			.sidebar-label, .sidebar-note, .sidebar-promo, .sidebar-footer, .sidebar-divider { display: none; }
+			.nav-item { width: 46px; min-height: 44px; justify-content: center; padding: 0; font-size: 0; }
+			.nav-icon { width: 25px; height: 25px; }
+			.discovery-page { padding: 16px 12px 22px; }
+			.discovery-head h1 { font-size: 23px; }
+			.featured { min-height: 142px; grid-template-columns: minmax(0, 1fr) 94px; gap: 8px; padding: 13px; }
+			.featured h2 { font-size: 17px; }
+			.featured p { font-size: 10px; }
+			.featured-art { width: 94px; }
+			.featured-art .art-placeholder { font-size: 28px; }
+			.content-toolbar { gap: 5px; overflow-x: auto; }
+			.pill { flex: 0 0 auto; padding: 0 9px; font-size: 10px; }
+			.result-count { display: none; }
+			.video-grid { gap: 15px 9px; }
+			.video-title { font-size: 11px; }
+			.video-meta { font-size: 9px; }
+			.card-body { grid-template-columns: minmax(0, 1fr) 25px; gap: 2px; }
+			.save-button { width: 25px; height: 25px; }
+			.watch-list { grid-template-columns: 1fr; }
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 		}
 	</style>
 </head>
@@ -150,164 +236,383 @@
 		<header class="topbar">
 			<a class="brand" href="/" aria-label="Hexium Web home">
 				<span class="brand-mark">H</span>
-				<span class="brand-copy">Hexium Web</span>
+				<span><span class="brand-name">Hexium Web</span><span class="brand-caption">Watch something good</span></span>
 			</a>
-			<div class="topbar-spacer"></div>
-			<a class="top-link" href="https://hexium.zip/" target="_blank" rel="noopener noreferrer">Hexium Site</a>
-			<a class="top-link" href="https://hexium-video-catalog.onrender.com/" target="_blank" rel="noopener noreferrer">Video Site</a>
-			<a class="close-look" href="https://hexium.zip/" aria-label="Go to Hexium home">×</a>
+			<div class="topbar-space"></div>
+			<a class="top-link" href="https://hexium.zip/" target="_blank" rel="noopener noreferrer"><span>↗</span> Hexium Site</a>
+			<a class="top-link" href="https://hexium-video-catalog.onrender.com/" target="_blank" rel="noopener noreferrer"><span>◉</span> Video Site</a>
+			<a class="window-close" href="https://hexium.zip/" aria-label="Go to Hexium home">×</a>
 		</header>
 		<div class="browser-body">
-			<nav class="sidebar" aria-label="Sections">
-				<div class="sidebar-label">Hexium Browser</div>
-				<button class="tab-button" id="youtube-tab" type="button" role="tab" aria-selected="true" aria-controls="youtube-page">
-					<span class="tab-icon">▶</span>YouTube
-				</button>
-				<button class="tab-button uploads" id="uploads-tab" type="button" role="tab" aria-selected="false" aria-controls="uploads-page">
-					<span class="tab-icon">H</span>Hexium Uploads
-				</button>
-				<p class="sidebar-note">Search and watch videos on the website. In-game browsing opens this page separately.</p>
+			<nav class="sidebar" aria-label="Main navigation">
+				<div class="sidebar-label">Browse</div>
+				<button class="nav-item" type="button" data-view="home" aria-current="page"><span class="nav-icon">⌂</span>Home</button>
+				<button class="nav-item" type="button" data-view="trending"><span class="nav-icon">↗</span>Trending</button>
+				<button class="nav-item" type="button" data-view="gaming"><span class="nav-icon">▣</span>Gaming</button>
+				<button class="nav-item" type="button" data-view="music"><span class="nav-icon">♫</span>Music</button>
+				<button class="nav-item" type="button" data-view="technology"><span class="nav-icon">⌘</span>Technology</button>
+				<div class="sidebar-divider"></div>
+				<div class="sidebar-label">Your space</div>
+				<button class="nav-item" type="button" data-view="saved"><span class="nav-icon">☆</span>Watch later</button>
+				<button class="nav-item purple" type="button" data-view="uploads"><span class="nav-icon">H</span>Hexium Uploads</button>
+				<div class="sidebar-spacer"></div>
+				<div class="sidebar-promo">
+					<strong>Your videos, one place.</strong>
+					<span>Find something new or pick up where you left off.</span>
+				</div>
+				<div class="sidebar-footer">HEXIUM WEB · VIDEO</div>
 			</nav>
-			<section class="page youtube-page" id="youtube-page" role="tabpanel" aria-labelledby="youtube-tab">
-				<div class="page-heading">
-					<span class="youtube-logo" aria-hidden="true">▶</span>
-					<h1>YouTube</h1>
+			<main class="page discovery-page" id="discovery-page">
+				<section class="discovery-head" aria-label="Video discovery">
+					<div class="heading-copy">
+						<div class="eyebrow">Your next watch starts here</div>
+						<h1 id="page-title">Discover videos</h1>
+						<p id="page-subtitle">Fresh picks from YouTube, collected in one place.</p>
+					</div>
 					<form class="search-form" id="search-form" role="search">
-						<input id="search-query" type="search" maxlength="100" placeholder="Search YouTube" aria-label="Search YouTube videos">
-						<button type="submit">Search</button>
+						<input id="search-query" type="search" maxlength="100" placeholder="Search YouTube videos..." aria-label="Search YouTube videos">
+						<button type="submit"><span aria-hidden="true">⌕</span> Search</button>
 					</form>
+				</section>
+
+				<section class="featured" id="featured" aria-label="Featured video">
+					<div class="featured-copy">
+						<div class="featured-tag"><span class="live-dot"></span> The Hexium feed</div>
+						<h2 id="featured-title">A whole world of videos.</h2>
+						<p id="featured-description">Find your next favorite, from the latest uploads to the topics you love. Pick a video and watch it right here.</p>
+						<div class="featured-actions">
+							<button class="action-button" type="button" id="featured-play" disabled><span aria-hidden="true">▶</span> Play featured</button>
+							<button class="action-button secondary" type="button" id="featured-browse"><span aria-hidden="true">↓</span> Explore videos</button>
+						</div>
+					</div>
+					<div class="featured-art" id="featured-art"><div class="art-placeholder" aria-hidden="true">▶</div></div>
+				</section>
+
+				<div class="content-toolbar" aria-label="Video filters">
+					<button class="pill active" type="button" data-filter="home">For you</button>
+					<button class="pill" type="button" data-filter="latest">Latest</button>
+					<button class="pill" type="button" data-filter="trending">Popular</button>
+					<span class="toolbar-spacer"></span>
+					<span class="result-count" id="result-count"></span>
 				</div>
-				<p class="status" id="status" role="status">Loading videos...</p>
-				<div class="watch-layout">
-					<section class="player-column" aria-label="Video player">
-						<div class="player-placeholder" id="player-placeholder">Choose a video to watch</div>
-						<iframe
-							id="player"
-							class="player-frame"
-							title="YouTube video player"
-							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-							referrerpolicy="strict-origin-when-cross-origin"
-							allowfullscreen
-							hidden>
-						</iframe>
-						<h2 class="player-title" id="player-title">Latest YouTube videos</h2>
-						<div class="player-details" id="player-details">Select a video from the list to play it here.</div>
-					</section>
-					<section class="results-column" aria-label="YouTube search results">
-						<h2 class="results-heading">Videos</h2>
-						<div class="video-list" id="videos"></div>
-					</section>
+
+				<div class="section-heading">
+					<h2 id="section-title">Picked for you</h2>
+					<span id="section-subtitle">From YouTube</span>
 				</div>
-			</section>
-			<section class="page uploads-page" id="uploads-page" role="tabpanel" aria-labelledby="uploads-tab" hidden>
-				<div class="uploads-icon" aria-hidden="true">⌁</div>
-				<h1>Hexium Uploads (WIP)</h1>
-				<p>This section is under construction. Hexium video uploads will appear here when they are available.</p>
-			</section>
+				<div class="video-grid" id="videos" aria-live="polite"></div>
+				<div class="empty-state" id="empty-state" hidden></div>
+				<p class="status-line" id="status" role="status">Loading YouTube videos...</p>
+			</main>
+			<main class="page watch-page" id="watch-page" hidden>
+				<section class="watch-main">
+					<button class="back-button" id="back-to-videos" type="button">← Back to videos</button>
+					<div class="watch-placeholder" id="watch-placeholder">Choose a video from the list</div>
+					<iframe class="watch-frame" id="player" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen hidden></iframe>
+					<h1 class="watch-title" id="player-title">Now playing</h1>
+					<div class="watch-meta" id="player-details">Select a video to play it here.</div>
+					<div class="watch-actions">
+						<button class="action-button secondary" id="save-current" type="button">☆ Save for later</button>
+						<a class="action-button secondary" id="open-youtube" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">↗ Open on YouTube</a>
+					</div>
+				</section>
+				<aside class="watch-side">
+					<h2>Up next</h2>
+					<div class="watch-list" id="watch-list"></div>
+				</aside>
+			</main>
+			<main class="page uploads-page" id="uploads-page" hidden>
+				<section class="uploads-card">
+					<div class="uploads-icon" aria-hidden="true">H</div>
+					<div class="eyebrow">Coming soon</div>
+					<h1>Hexium Uploads</h1>
+					<p>This corner is getting ready for its first uploads. In the meantime, explore the YouTube feed and find something new to watch.</p>
+					<button class="action-button" type="button" id="uploads-browse">Explore YouTube <span aria-hidden="true">→</span></button>
+				</section>
+			</main>
 		</div>
 	</div>
+
 	<script>
 		const form = document.getElementById("search-form");
 		const searchQuery = document.getElementById("search-query");
 		const statusLabel = document.getElementById("status");
-		const videoList = document.getElementById("videos");
+		const videoGrid = document.getElementById("videos");
+		const emptyState = document.getElementById("empty-state");
+		const featured = document.getElementById("featured");
+		const featuredTitle = document.getElementById("featured-title");
+		const featuredDescription = document.getElementById("featured-description");
+		const featuredArt = document.getElementById("featured-art");
+		const featuredPlay = document.getElementById("featured-play");
+		const resultCount = document.getElementById("result-count");
+		const pageTitle = document.getElementById("page-title");
+		const pageSubtitle = document.getElementById("page-subtitle");
+		const sectionTitle = document.getElementById("section-title");
+		const sectionSubtitle = document.getElementById("section-subtitle");
+		const discoveryPage = document.getElementById("discovery-page");
+		const watchPage = document.getElementById("watch-page");
+		const uploadsPage = document.getElementById("uploads-page");
 		const player = document.getElementById("player");
-		const playerPlaceholder = document.getElementById("player-placeholder");
+		const watchPlaceholder = document.getElementById("watch-placeholder");
 		const playerTitle = document.getElementById("player-title");
 		const playerDetails = document.getElementById("player-details");
-		const youtubeTab = document.getElementById("youtube-tab");
-		const uploadsTab = document.getElementById("uploads-tab");
-		const youtubePage = document.getElementById("youtube-page");
-		const uploadsPage = document.getElementById("uploads-page");
+		const watchList = document.getElementById("watch-list");
+		const saveCurrentButton = document.getElementById("save-current");
+		const openYoutubeLink = document.getElementById("open-youtube");
 
-		function switchTab(tab) {
-			const showYouTube = tab === "youtube";
-			youtubeTab.setAttribute("aria-selected", String(showYouTube));
-			uploadsTab.setAttribute("aria-selected", String(!showYouTube));
-			youtubePage.hidden = !showYouTube;
-			uploadsPage.hidden = showYouTube;
+		let currentVideos = [];
+		let currentVideo = null;
+		let currentView = "home";
+		let currentFilter = "home";
+		let requestNumber = 0;
+		let savedVideos = loadSavedVideos();
+
+		function loadSavedVideos() {
+			try {
+				const stored = JSON.parse(localStorage.getItem("hexium-saved-videos") || "[]");
+				return Array.isArray(stored) ? stored.filter((video) => video && typeof video.videoId === "string") : [];
+			} catch (error) {
+				console.warn("Could not read saved videos:", error);
+				return [];
+			}
 		}
 
-		function selectVideo(video) {
-			if (!/^[A-Za-z0-9_-]{11}$/.test(video.videoId)) {
-				statusLabel.textContent = "YouTube returned an invalid video ID.";
-				return;
+		function persistSavedVideos() {
+			try {
+				localStorage.setItem("hexium-saved-videos", JSON.stringify(savedVideos));
+			} catch (error) {
+				console.warn("Could not save watch-later list:", error);
+				setStatus("Your browser could not save this list. Check its storage settings.", true);
+			}
+		}
+
+		function setStatus(message, isError) {
+			statusLabel.textContent = message;
+			statusLabel.classList.toggle("error", Boolean(isError));
+		}
+
+		function dateLabel(value) {
+			if (!value) return "";
+			const date = new Date(value);
+			return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+		}
+
+		function createThumbnail(video, className) {
+			if (video.thumbnailUrl) {
+				const image = document.createElement("img");
+				image.className = className;
+				image.src = video.thumbnailUrl;
+				image.alt = "";
+				image.loading = "lazy";
+				image.referrerPolicy = "no-referrer";
+				image.addEventListener("error", () => {
+					const fallback = document.createElement("div");
+					fallback.className = className === "video-thumb" ? "thumb-fallback" : "art-placeholder";
+					fallback.textContent = "▶";
+					image.replaceWith(fallback);
+				}, { once: true });
+				return image;
 			}
 
-			player.src = `https://www.youtube-nocookie.com/embed/${video.videoId}`;
-			player.hidden = false;
-			playerPlaceholder.hidden = true;
-			playerTitle.textContent = video.title;
-			playerDetails.textContent = [video.channelTitle, video.publishedAt ? new Date(video.publishedAt).toLocaleDateString() : ""]
-				.filter(Boolean)
-				.join(" · ");
+			const fallback = document.createElement("div");
+			fallback.className = className === "video-thumb" ? "thumb-fallback" : "art-placeholder";
+			fallback.textContent = "▶";
+			return fallback;
+		}
+
+		function isSaved(videoId) {
+			return savedVideos.some((video) => video.videoId === videoId);
+		}
+
+		function toggleSaved(video) {
+			if (isSaved(video.videoId)) {
+				savedVideos = savedVideos.filter((saved) => saved.videoId !== video.videoId);
+			} else {
+				savedVideos.unshift(video);
+				savedVideos = savedVideos.slice(0, 100);
+			}
+			persistSavedVideos();
+
+			if (currentView === "saved") {
+				renderVideos(savedVideos);
+			} else {
+				renderVideos(currentVideos);
+			}
+			if (currentVideo && currentVideo.videoId === video.videoId) {
+				updateSaveCurrentButton();
+			}
+		}
+
+		function createVideoCard(video, compact) {
+			const card = document.createElement("article");
+			card.className = "video-card";
+
+			const selectButton = document.createElement("button");
+			selectButton.className = "video-card";
+			selectButton.type = "button";
+			selectButton.setAttribute("aria-label", `Play ${video.title}`);
+			selectButton.addEventListener("click", () => openWatchPage(video));
+
+			const thumbnailWrap = document.createElement("span");
+			thumbnailWrap.className = "thumb-wrap";
+			thumbnailWrap.appendChild(createThumbnail(video, "video-thumb"));
+			const playOverlay = document.createElement("span");
+			playOverlay.className = "thumb-play";
+			playOverlay.innerHTML = "<span aria-hidden=\"true\">▶</span>";
+			thumbnailWrap.appendChild(playOverlay);
+			selectButton.appendChild(thumbnailWrap);
+
+			const copy = document.createElement("span");
+			copy.className = "video-copy";
+			const title = document.createElement("span");
+			title.className = "video-title";
+			title.textContent = video.title;
+			copy.appendChild(title);
+			const meta = document.createElement("span");
+			meta.className = "video-meta";
+			const channel = document.createElement("span");
+			channel.textContent = video.channelTitle || "YouTube";
+			meta.appendChild(channel);
+			if (video.publishedAt) {
+				const date = document.createElement("span");
+				date.textContent = dateLabel(video.publishedAt);
+				meta.appendChild(date);
+			}
+			copy.appendChild(meta);
+			selectButton.appendChild(copy);
+
+			const body = document.createElement("div");
+			body.className = "card-body";
+			body.appendChild(selectButton);
+			if (!compact) {
+				const save = document.createElement("button");
+				save.className = `save-button${isSaved(video.videoId) ? " saved" : ""}`;
+				save.type = "button";
+				save.title = isSaved(video.videoId) ? "Remove from Watch later" : "Save to Watch later";
+				save.setAttribute("aria-label", save.title);
+				save.textContent = isSaved(video.videoId) ? "★" : "☆";
+				save.addEventListener("click", () => toggleSaved(video));
+				body.appendChild(save);
+			}
+
+			card.appendChild(body);
+			return card;
 		}
 
 		function renderVideos(videos) {
-			videoList.replaceChildren();
+			videoGrid.replaceChildren();
+			emptyState.hidden = videos.length !== 0;
+
 			if (videos.length === 0) {
-				statusLabel.textContent = "No embeddable videos found. Try another search.";
+				const savedView = currentView === "saved";
+				const title = document.createElement("strong");
+				title.textContent = savedView ? "Nothing saved yet" : "No videos found";
+				const message = document.createElement("span");
+				message.textContent = savedView
+					? "Save videos with the star button and they’ll be waiting here."
+					: "Try a different search, or choose another browse category.";
+				emptyState.replaceChildren(title, message);
+				resultCount.textContent = "0 videos";
 				return;
 			}
 
-			videos.forEach((video) => {
-				const card = document.createElement("button");
-				card.type = "button";
-				card.className = "video-card";
-				card.addEventListener("click", () => selectVideo(video));
-
-				if (video.thumbnailUrl) {
-					const image = document.createElement("img");
-					image.className = "video-thumb";
-					image.src = video.thumbnailUrl;
-					image.alt = "";
-					image.loading = "lazy";
-					image.referrerPolicy = "no-referrer";
-					image.addEventListener("error", () => {
-						const fallback = document.createElement("div");
-						fallback.className = "thumbnail-placeholder";
-						fallback.textContent = "YouTube";
-						image.replaceWith(fallback);
-					}, { once: true });
-					card.appendChild(image);
-				} else {
-					const fallback = document.createElement("div");
-					fallback.className = "thumbnail-placeholder";
-					fallback.textContent = "YouTube";
-					card.appendChild(fallback);
-				}
-
-				const copy = document.createElement("div");
-				copy.className = "video-copy";
-
-				const title = document.createElement("h3");
-				title.className = "video-title";
-				title.textContent = video.title;
-				copy.appendChild(title);
-
-				const meta = document.createElement("div");
-				meta.className = "video-meta";
-				meta.textContent = [video.channelTitle, video.publishedAt ? new Date(video.publishedAt).toLocaleDateString() : ""]
-					.filter(Boolean)
-					.join(" · ");
-				copy.appendChild(meta);
-
-				card.appendChild(copy);
-				videoList.appendChild(card);
-			});
-
-			statusLabel.textContent = `${videos.length} videos · Select one to play`;
+			videos.forEach((video) => videoGrid.appendChild(createVideoCard(video, false)));
+			resultCount.textContent = `${videos.length} ${videos.length === 1 ? "video" : "videos"}`;
 		}
 
-		async function loadVideos(query) {
-			statusLabel.textContent = "Loading YouTube videos...";
-			videoList.replaceChildren();
+		function showFeatured(video) {
+			featuredTitle.textContent = video.title;
+			featuredDescription.textContent = [video.channelTitle || "YouTube", dateLabel(video.publishedAt)]
+				.filter(Boolean)
+				.join(" · ");
+			featuredArt.replaceChildren(createThumbnail(video, "featured-thumb"));
+			const image = featuredArt.querySelector("img");
+			if (image) {
+				image.style.width = "100%";
+				image.style.height = "100%";
+				image.style.objectFit = "cover";
+			}
+			featuredPlay.disabled = false;
+			featuredPlay.onclick = () => openWatchPage(video);
+		}
+
+		function updateSaveCurrentButton() {
+			if (!currentVideo) return;
+			const saved = isSaved(currentVideo.videoId);
+			saveCurrentButton.textContent = saved ? "★ Saved for later" : "☆ Save for later";
+		}
+
+		function openWatchPage(video) {
+			if (!/^[A-Za-z0-9_-]{11}$/.test(video.videoId)) {
+				setStatus("YouTube returned an invalid video ID.", true);
+				return;
+			}
+
+			currentVideo = video;
+			player.src = `https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`;
+			player.hidden = false;
+			watchPlaceholder.hidden = true;
+			playerTitle.textContent = video.title;
+			playerDetails.textContent = [video.channelTitle || "YouTube", dateLabel(video.publishedAt)]
+				.filter(Boolean)
+				.join(" · ");
+			openYoutubeLink.href = `https://www.youtube.com/watch?v=${encodeURIComponent(video.videoId)}`;
+			updateSaveCurrentButton();
+			renderUpNext(video.videoId);
+			discoveryPage.hidden = true;
+			uploadsPage.hidden = true;
+			watchPage.hidden = false;
+			watchPage.scrollTop = 0;
+		}
+
+		function renderUpNext(excludeId) {
+			watchList.replaceChildren();
+			currentVideos.filter((video) => video.videoId !== excludeId).slice(0, 8)
+				.forEach((video) => watchList.appendChild(createVideoCard(video, true)));
+		}
+
+		function closeWatchPage() {
+			player.src = "";
+			player.hidden = true;
+			watchPlaceholder.hidden = false;
+			watchPage.hidden = true;
+			if (currentView === "uploads") {
+				uploadsPage.hidden = false;
+			} else {
+				discoveryPage.hidden = false;
+			}
+		}
+
+		function setActiveNavigation(view) {
+			document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
+				if (button.dataset.view === view) {
+					button.setAttribute("aria-current", "page");
+				} else {
+					button.removeAttribute("aria-current");
+				}
+			});
+		}
+
+		function setActiveFilter(filter) {
+			currentFilter = filter;
+			document.querySelectorAll(".pill[data-filter]").forEach((button) => {
+				button.classList.toggle("active", button.dataset.filter === filter);
+			});
+		}
+
+		async function loadVideos(query, order) {
+			const requestId = ++requestNumber;
+			currentView = currentView === "saved" ? "saved" : "home";
+			statusLabel.classList.remove("error");
+			setStatus("Finding videos for you...");
+			videoGrid.replaceChildren();
+			emptyState.hidden = true;
+			featured.hidden = Boolean(query);
 
 			try {
 				const endpoint = new URL("/videos", window.location.origin);
-				if (query) {
-					endpoint.searchParams.set("query", query);
-				}
+				if (query) endpoint.searchParams.set("query", query);
+				if (order) endpoint.searchParams.set("order", order);
 
 				const response = await fetch(endpoint);
 				const responseBody = await response.text();
@@ -315,31 +620,123 @@
 				try {
 					result = JSON.parse(responseBody);
 				} catch (error) {
-					throw new Error(`Video service returned a non-JSON response (${response.status}).`);
+					throw new Error(`Video service returned an unreadable response (${response.status}).`);
 				}
-				if (!response.ok) {
-					throw new Error(result.error || `Request failed (${response.status})`);
-				}
-				if (!result || !Array.isArray(result.videos)) {
-					throw new Error("The video service returned an invalid response.");
-				}
+				if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
+				if (!result || !Array.isArray(result.videos)) throw new Error("The video service returned an invalid response.");
+				if (requestId !== requestNumber) return;
 
-				playerTitle.textContent = query ? `Search results for “${query}”` : "Latest YouTube videos";
-				renderVideos(result.videos);
+				currentVideos = result.videos;
+				if (currentVideos.length > 0 && !query) showFeatured(currentVideos[0]);
+				renderVideos(currentVideos);
+				setStatus(currentVideos.length ? "You’re all caught up. Here’s what’s playing on YouTube." : "No videos came back for this view.");
 			} catch (error) {
-				statusLabel.textContent = error.message || "Could not load YouTube videos.";
+				if (requestId !== requestNumber) return;
+				setStatus(error.message || "Could not load YouTube videos.", true);
+				emptyState.hidden = false;
+				const title = document.createElement("strong");
+				title.textContent = "The video feed didn’t load";
+				const message = document.createElement("span");
+				message.textContent = error.message || "Check the connection and try again.";
+				emptyState.replaceChildren(title, message);
 				console.error("Could not load YouTube videos:", error);
 			}
 		}
 
-		youtubeTab.addEventListener("click", () => switchTab("youtube"));
-		uploadsTab.addEventListener("click", () => switchTab("uploads"));
+		function browse(view) {
+			currentView = view;
+			setActiveNavigation(view);
+			watchPage.hidden = true;
+			player.src = "";
+			currentVideo = null;
+			uploadsPage.hidden = view !== "uploads";
+			discoveryPage.hidden = view === "uploads";
+			if (view === "uploads") {
+				return;
+			}
+
+			featured.hidden = view === "saved";
+			searchQuery.value = "";
+			if (view === "saved") {
+				currentVideos = savedVideos.slice();
+				pageTitle.textContent = "Watch later";
+				pageSubtitle.textContent = "Your saved videos, ready when you are.";
+				sectionTitle.textContent = "Saved videos";
+				sectionSubtitle.textContent = "Only you can see this list";
+				setActiveFilter("");
+				setStatus("");
+				renderVideos(currentVideos);
+			} else if (view === "trending") {
+				pageTitle.textContent = "What’s popular";
+				pageSubtitle.textContent = "Videos people are watching right now.";
+				sectionTitle.textContent = "Trending on YouTube";
+				sectionSubtitle.textContent = "Popular right now";
+				setActiveFilter("trending");
+				loadVideos("", "viewCount");
+			} else if (view === "gaming" || view === "music" || view === "technology") {
+				const labels = { gaming: "Gaming", music: "Music", technology: "Technology" };
+				pageTitle.textContent = `${labels[view]} videos`;
+				pageSubtitle.textContent = `Explore what’s new in ${labels[view].toLowerCase()}.`;
+				sectionTitle.textContent = `Explore ${labels[view]}`;
+				sectionSubtitle.textContent = "YouTube search";
+				setActiveFilter("");
+				loadVideos(labels[view], "relevance");
+			} else {
+				pageTitle.textContent = "Discover videos";
+				pageSubtitle.textContent = "Fresh picks from YouTube, collected in one place.";
+				sectionTitle.textContent = "Picked for you";
+				sectionSubtitle.textContent = "From YouTube";
+				setActiveFilter("home");
+				loadVideos("", "date");
+			}
+		}
+
+		document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
+			button.addEventListener("click", () => browse(button.dataset.view));
+		});
+		document.querySelectorAll(".pill[data-filter]").forEach((button) => {
+			button.addEventListener("click", () => {
+				if (button.dataset.filter === "trending") browse("trending");
+				else if (button.dataset.filter === "latest") {
+					currentView = "home";
+					setActiveNavigation("home");
+					pageTitle.textContent = "Latest uploads";
+					pageSubtitle.textContent = "The newest videos from across YouTube.";
+					sectionTitle.textContent = "Latest videos";
+					sectionSubtitle.textContent = "Just uploaded";
+					setActiveFilter("latest");
+					loadVideos("", "date");
+				} else {
+					browse("home");
+				}
+			});
+		});
 		form.addEventListener("submit", (event) => {
 			event.preventDefault();
-			loadVideos(searchQuery.value.trim());
+			const query = searchQuery.value.trim().slice(0, 100);
+			currentView = "home";
+			setActiveNavigation("home");
+			pageTitle.textContent = query ? `Results for “${query}”` : "Discover videos";
+			pageSubtitle.textContent = query ? "Searching YouTube for your phrase." : "Fresh picks from YouTube, collected in one place.";
+			sectionTitle.textContent = query ? "Search results" : "Picked for you";
+			sectionSubtitle.textContent = query ? "From YouTube" : "From YouTube";
+			setActiveFilter("");
+			loadVideos(query, query ? "relevance" : "date");
 		});
 
-		loadVideos("");
+		document.getElementById("featured-browse").addEventListener("click", () => {
+			document.getElementById("videos").scrollIntoView({ behavior: "smooth", block: "start" });
+		});
+		document.getElementById("uploads-browse").addEventListener("click", () => browse("home"));
+		document.getElementById("back-to-videos").addEventListener("click", closeWatchPage);
+		saveCurrentButton.addEventListener("click", () => {
+			if (currentVideo) toggleSaved(currentVideo);
+		});
+		window.addEventListener("keydown", (event) => {
+			if (event.key === "Escape" && !watchPage.hidden) closeWatchPage();
+		});
+
+		browse("home");
 	</script>
 </body>
 </html>

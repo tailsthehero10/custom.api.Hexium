@@ -30,8 +30,14 @@ API examples:
 ```text
 GET /videos
 GET /videos?query=roblox
+GET /videos?order=viewCount
+GET /videos?query=roblox&order=relevance
 GET /health
 ```
+
+The website includes a Discover feed, Latest and Popular sorting, Gaming/Music/
+Technology shortcuts, a separate watch page with an up-next list, and a local
+Watch later list saved in the visitor's browser.
 
 The response contains up to 12 results in this shape:
 
@@ -58,7 +64,9 @@ The LocalScript in `StarterGui` displays those same YouTube results. Enable
 **Game Settings > Security > Allow HTTP Requests**.
 
 The in-game UI displays metadata and watch links; it cannot embed the website
-or stream YouTube playback. Players can watch videos using the Render site.
+or stream YouTube playback. Roblox also denies game scripts permission to
+force-open external browser windows, so the site and video buttons expose a
+selectable URL for players to copy and open outside the game.
 
 ## Run locally
 
