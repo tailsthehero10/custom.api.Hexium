@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Hexium game video catalog API status">
+	<title>Hexium Video Catalog</title>
+	<style>
+		:root {
+			color-scheme: dark;
+			font-family: Arial, sans-serif;
+			background: #101114;
+			color: #f3f4f6;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			max-width: 760px;
+			margin: 0 auto;
+			padding: 48px 22px;
+		}
+
+		main {
+			padding: 28px;
+			border: 1px solid #30323a;
+			border-radius: 14px;
+			background: #191a20;
+		}
+
+		h1 { margin-top: 0; }
+		p { color: #b7bac5; line-height: 1.55; }
+
+		code {
+			padding: 3px 6px;
+			border-radius: 5px;
+			background: #292b34;
+			color: #d6b7ff;
+			overflow-wrap: anywhere;
+		}
+
+		.status {
+			display: inline-block;
+			padding: 6px 10px;
+			border-radius: 999px;
+			background: #183b2b;
+			color: #8df0b1;
+			font-size: 14px;
+		}
+
+		#videos { padding-left: 20px; }
+		#videos li { margin: 12px 0; }
+	</style>
+</head>
+<body>
+	<main>
+		<span class="status" id="status">Checking catalog...</span>
+		<h1>Hexium Video Catalog</h1>
+		<p>This site serves video metadata to the Roblox game. It does not host or play video files.</p>
+		<p>API endpoint: <code id="endpoint">/videos</code></p>
+		<h2>Catalog</h2>
+		<ul id="videos"></ul>
+	</main>
+	<script>
+		const statusLabel = document.getElementById("status");
+		const endpointLabel = document.getElementById("endpoint");
+		const videoList = document.getElementById("videos");
+
+		endpointLabel.textContent = new URL("/videos", window.location.href).href;
+
+		fetch("/videos")
+			.then((response) => {
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`);
+				}
+				return response.json();
+			})
+			.then((catalog) => {
+				if (!catalog || !Array.isArray(catalog.videos)) {
+					throw new Error("Invalid catalog response");
+				}
+
+				statusLabel.textContent = "API online";
+				if (catalog.videos.length === 0) {
+					const emptyItem = document.createElement("li");
+					emptyItem.textContent = "No videos added yet. Add entries to videos.json.";
+					videoList.appendChild(emptyItem);
+					return;
+				}
+
+				catalog.videos.forEach((video) => {
+					const item = document.createElement("li");
+					item.textContent = `${video.title} (ID: ${video.videoId})`;
+					videoList.appendChild(item);
+				});
+			})
+			.catch((error) => {
+				statusLabel.textContent = "API unavailable";
+				console.error("Could not load video catalog:", error);
+			});
+	</script>
+</body>
+</html>

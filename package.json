@@ -1,0 +1,12 @@
+{
+  "name": "hexium-video-catalog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HTTP video catalog API and small status page for the Hexium Roblox browser",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
