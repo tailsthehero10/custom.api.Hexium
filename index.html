@@ -3,101 +3,303 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="Hexium game video catalog API status">
-	<title>Hexium Video Catalog</title>
+	<meta name="description" content="Search and watch YouTube videos with Hexium">
+	<title>Hexium Video</title>
 	<style>
 		:root {
 			color-scheme: dark;
 			font-family: Arial, sans-serif;
-			background: #101114;
-			color: #f3f4f6;
+			background: #0f0f0f;
+			color: #f1f1f1;
 		}
 
 		* { box-sizing: border-box; }
 
-		body {
-			max-width: 760px;
+		body { margin: 0; }
+
+		header {
+			position: sticky;
+			top: 0;
+			z-index: 2;
+			display: flex;
+			align-items: center;
+			gap: 24px;
+			padding: 14px max(24px, calc((100vw - 1440px) / 2));
+			background: #171717;
+			border-bottom: 1px solid #303030;
+		}
+
+		.brand {
+			flex: 0 0 auto;
+			color: #ff4545;
+			font-size: 23px;
+			font-weight: 700;
+			text-decoration: none;
+		}
+
+		form {
+			display: flex;
+			width: min(640px, 100%);
 			margin: 0 auto;
-			padding: 48px 22px;
+		}
+
+		input, button { font: inherit; }
+
+		input {
+			min-width: 0;
+			flex: 1;
+			padding: 11px 16px;
+			border: 1px solid #454545;
+			border-radius: 24px 0 0 24px;
+			outline: none;
+			background: #101010;
+			color: #f1f1f1;
+		}
+
+		input:focus { border-color: #858585; }
+
+		form button {
+			padding: 0 20px;
+			border: 1px solid #454545;
+			border-left: 0;
+			border-radius: 0 24px 24px 0;
+			background: #292929;
+			color: #f1f1f1;
+			cursor: pointer;
 		}
 
 		main {
-			padding: 28px;
-			border: 1px solid #30323a;
-			border-radius: 14px;
-			background: #191a20;
+			display: grid;
+			grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.85fr);
+			gap: 28px;
+			max-width: 1440px;
+			margin: 0 auto;
+			padding: 28px 24px;
 		}
 
-		h1 { margin-top: 0; }
-		p { color: #b7bac5; line-height: 1.55; }
+		.player-column { min-width: 0; }
 
-		code {
-			padding: 3px 6px;
-			border-radius: 5px;
-			background: #292b34;
-			color: #d6b7ff;
-			overflow-wrap: anywhere;
+		.player-frame {
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			border: 0;
+			border-radius: 12px;
+			background: #000;
 		}
 
-		.status {
-			display: inline-block;
-			padding: 6px 10px;
-			border-radius: 999px;
-			background: #183b2b;
-			color: #8df0b1;
-			font-size: 14px;
+		#player-placeholder {
+			display: grid;
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			place-items: center;
+			border-radius: 12px;
+			background: #1b1b1b;
+			color: #aaa;
+			text-align: center;
 		}
 
-		#videos { padding-left: 20px; }
-		#videos li { margin: 12px 0; }
+		h1 { margin: 18px 0 8px; font-size: 22px; }
+		#player-details, #status { color: #aaa; line-height: 1.5; }
+		#status { min-height: 24px; margin: 0 0 12px; }
+
+		#videos {
+			display: grid;
+			gap: 12px;
+			align-content: start;
+		}
+
+		.video-card {
+			display: grid;
+			grid-template-columns: 168px minmax(0, 1fr);
+			gap: 12px;
+			width: 100%;
+			padding: 0;
+			border: 0;
+			background: transparent;
+			color: inherit;
+			text-align: left;
+			cursor: pointer;
+		}
+
+		.video-card img, .thumbnail-placeholder {
+			display: grid;
+			width: 168px;
+			aspect-ratio: 16 / 9;
+			place-items: center;
+			border-radius: 8px;
+			background: #272727;
+			color: #999;
+			object-fit: cover;
+		}
+
+		.video-card:hover .video-title { color: #ff7373; }
+		.video-copy { min-width: 0; }
+		.video-title { margin: 2px 0 7px; font-size: 15px; line-height: 1.4; }
+		.video-meta { color: #aaa; font-size: 13px; line-height: 1.45; }
+
+		@media (max-width: 900px) {
+			main { grid-template-columns: 1fr; }
+			#videos { grid-template-columns: 1fr 1fr; }
+		}
+
+		@media (max-width: 600px) {
+			header { gap: 14px; padding: 12px; }
+			.brand { font-size: 18px; }
+			main { padding: 18px 12px; }
+			#videos { grid-template-columns: 1fr; }
+			.video-card { grid-template-columns: 145px minmax(0, 1fr); }
+			.video-card img, .thumbnail-placeholder { width: 145px; }
+		}
 	</style>
 </head>
 <body>
+	<header>
+		<a class="brand" href="/">Hexium Video</a>
+		<form id="search-form" role="search">
+			<input id="search-query" type="search" maxlength="100" placeholder="Search YouTube videos">
+			<button type="submit">Search</button>
+		</form>
+	</header>
 	<main>
-		<span class="status" id="status">Checking catalog...</span>
-		<h1>Hexium Video Catalog</h1>
-		<p>This site serves video metadata to the Roblox game. It does not host or play video files.</p>
-		<p>API endpoint: <code id="endpoint">/videos</code></p>
-		<h2>Catalog</h2>
-		<ul id="videos"></ul>
+		<section class="player-column" aria-label="Video player">
+			<div id="player-placeholder">Choose a video to watch</div>
+			<iframe
+				id="player"
+				class="player-frame"
+				title="YouTube video player"
+				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+				referrerpolicy="strict-origin-when-cross-origin"
+				allowfullscreen
+				hidden>
+			</iframe>
+			<h1 id="player-title">Latest YouTube videos</h1>
+			<div id="player-details">Select any video to play it here.</div>
+		</section>
+		<section aria-label="YouTube search results">
+			<p id="status" role="status">Loading videos...</p>
+			<div id="videos"></div>
+		</section>
 	</main>
 	<script>
+		const form = document.getElementById("search-form");
+		const searchQuery = document.getElementById("search-query");
 		const statusLabel = document.getElementById("status");
-		const endpointLabel = document.getElementById("endpoint");
 		const videoList = document.getElementById("videos");
+		const player = document.getElementById("player");
+		const playerPlaceholder = document.getElementById("player-placeholder");
+		const playerTitle = document.getElementById("player-title");
+		const playerDetails = document.getElementById("player-details");
 
-		endpointLabel.textContent = new URL("/videos", window.location.href).href;
+		function selectVideo(video) {
+			if (!/^[A-Za-z0-9_-]{11}$/.test(video.videoId)) {
+				statusLabel.textContent = "YouTube returned an invalid video ID.";
+				return;
+			}
 
-		fetch("/videos")
-			.then((response) => {
-				if (!response.ok) {
-					throw new Error(`HTTP ${response.status}`);
+			player.src = `https://www.youtube-nocookie.com/embed/${video.videoId}`;
+			player.hidden = false;
+			playerPlaceholder.hidden = true;
+			playerTitle.textContent = video.title;
+			playerDetails.textContent = [video.channelTitle, video.publishedAt ? new Date(video.publishedAt).toLocaleDateString() : ""]
+				.filter(Boolean)
+				.join(" · ");
+		}
+
+		function renderVideos(videos) {
+			videoList.replaceChildren();
+			if (videos.length === 0) {
+				statusLabel.textContent = "No embeddable videos found. Try another search.";
+				return;
+			}
+
+			videos.forEach((video) => {
+				const card = document.createElement("button");
+				card.type = "button";
+				card.className = "video-card";
+				card.addEventListener("click", () => selectVideo(video));
+
+				if (video.thumbnailUrl) {
+					const image = document.createElement("img");
+					image.src = video.thumbnailUrl;
+					image.alt = "";
+					image.loading = "lazy";
+					image.referrerPolicy = "no-referrer";
+					image.addEventListener("error", () => {
+						const fallback = document.createElement("div");
+						fallback.className = "thumbnail-placeholder";
+						fallback.textContent = "YouTube";
+						image.replaceWith(fallback);
+					}, { once: true });
+					card.appendChild(image);
+				} else {
+					const fallback = document.createElement("div");
+					fallback.className = "thumbnail-placeholder";
+					fallback.textContent = "YouTube";
+					card.appendChild(fallback);
 				}
-				return response.json();
-			})
-			.then((catalog) => {
-				if (!catalog || !Array.isArray(catalog.videos)) {
-					throw new Error("Invalid catalog response");
-				}
 
-				statusLabel.textContent = "API online";
-				if (catalog.videos.length === 0) {
-					const emptyItem = document.createElement("li");
-					emptyItem.textContent = "No videos added yet. Add entries to videos.json.";
-					videoList.appendChild(emptyItem);
-					return;
-				}
+				const copy = document.createElement("div");
+				copy.className = "video-copy";
 
-				catalog.videos.forEach((video) => {
-					const item = document.createElement("li");
-					item.textContent = `${video.title} (ID: ${video.videoId})`;
-					videoList.appendChild(item);
-				});
-			})
-			.catch((error) => {
-				statusLabel.textContent = "API unavailable";
-				console.error("Could not load video catalog:", error);
+				const title = document.createElement("h2");
+				title.className = "video-title";
+				title.textContent = video.title;
+				copy.appendChild(title);
+
+				const meta = document.createElement("div");
+				meta.className = "video-meta";
+				meta.textContent = [video.channelTitle, video.publishedAt ? new Date(video.publishedAt).toLocaleDateString() : ""]
+					.filter(Boolean)
+					.join(" · ");
+				copy.appendChild(meta);
+
+				card.appendChild(copy);
+				videoList.appendChild(card);
 			});
+
+			statusLabel.textContent = `${videos.length} videos · Select one to play`;
+			if (player.hidden) {
+				selectVideo(videos[0]);
+			}
+		}
+
+		async function loadVideos(query) {
+			statusLabel.textContent = "Loading YouTube videos...";
+			videoList.replaceChildren();
+
+			try {
+				const endpoint = new URL("/videos", window.location.origin);
+				if (query) {
+					endpoint.searchParams.set("query", query);
+				}
+
+				const response = await fetch(endpoint);
+				const result = await response.json();
+				if (!response.ok) {
+					throw new Error(result.error || `Request failed (${response.status})`);
+				}
+				if (!result || !Array.isArray(result.videos)) {
+					throw new Error("The video service returned an invalid response.");
+				}
+
+				if (query) {
+					playerTitle.textContent = `Search results for “${query}”`;
+				} else {
+					playerTitle.textContent = "Latest YouTube videos";
+				}
+				renderVideos(result.videos);
+			} catch (error) {
+				statusLabel.textContent = error.message || "Could not load YouTube videos.";
+				console.error("Could not load YouTube videos:", error);
+			}
+		}
+
+		form.addEventListener("submit", (event) => {
+			event.preventDefault();
+			loadVideos(searchQuery.value.trim());
+		});
+
+		loadVideos("");
 	</script>
 </body>
 </html>

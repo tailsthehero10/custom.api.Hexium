@@ -1,68 +1,72 @@
-# Hexium Video Catalog site
+# Hexium YouTube
 
-This small Node.js site serves `videos.json` at `GET /videos` and a status page at `/`.
-It has no external package dependencies.
+The Render site searches YouTube and embeds selected videos on the website.
+The Roblox game uses the same API to show searchable video titles and YouTube
+links in its UI. Roblox cannot play YouTube streams inside a game UI.
 
-## Deploy on Render
+## Configure YouTube API access
 
-1. Push this repository to GitHub.
-2. In Render, choose **New > Blueprint** and select that repository.
-3. Render reads `render.yaml` from the repository root and deploys this project
-   as a Node.js web service named `hexium-video-catalog`.
-4. After deployment, open the service URL. The status page should load, and
-   `/health` should return `{"status":"ok"}`. The catalog endpoint is
-   `https://<your-render-service>.onrender.com/videos`.
-5. Put that full HTTPS `/videos` URL in `API_URL` in
-   `VideoCatalogServer.server.luau`, publish the Roblox experience, and enable
-   **Game Settings > Security > Allow HTTP Requests**.
+YouTube search requires a Google API key:
 
-The free Render service may spin down while idle, so the first request after
-idle can take longer.
+1. Create a project in Google Cloud Console and enable **YouTube Data API v3**.
+2. Create an API key for that project. Restrict the key to the YouTube Data API.
+3. In Render, open the `hexium-video-catalog` service's **Environment** settings
+   and add `YOUTUBE_API_KEY` with the key as its value.
+4. Save the setting and redeploy/restart the service.
 
-## Run locally
+Never put the API key in source files or commit it to GitHub. The server uses
+the key privately when calling Google; it is not sent to the site or game.
+Without the key, `/videos` returns a configuration error rather than a fake
+video list.
 
-From the repository root, run:
+## Use the website
+
+Open the Render service URL. The page loads recent embeddable videos by default.
+Use the search box to find videos, then select a result to play it in the
+embedded YouTube player. Search results are cached for five minutes.
+
+API examples:
 
 ```text
-npm start
+GET /videos
+GET /videos?query=roblox
+GET /health
 ```
 
-Then open `http://localhost:3000` in a browser. The JSON endpoint is
-`http://localhost:3000/videos`.
-
-Add catalog entries by editing `videos.json`:
+The response contains up to 12 results in this shape:
 
 ```json
 {
   "videos": [
     {
-      "videoId": "your-video-id",
-      "title": "Your video title",
-      "thumbnailUrl": "rbxassetid://123456789"
+      "videoId": "YouTubeVideoId",
+      "title": "Video title",
+      "channelTitle": "Channel",
+      "publishedAt": "2026-01-01T00:00:00Z",
+      "thumbnailUrl": "https://i.ytimg.com/vi/YouTubeVideoId/hqdefault.jpg",
+      "watchUrl": "https://www.youtube.com/watch?v=YouTubeVideoId"
     }
   ]
 }
 ```
 
-`thumbnailUrl` is optional. If used in the Roblox UI, it must be a Roblox image
-asset ID in `rbxassetid://...` format. `videoId` is displayed as metadata only;
-it does not stream or play the video.
+## Connect Roblox Studio 2021
 
-## Connect Roblox
+The server script in `ServerScriptService` requests `/videos` over HTTPS. It
+passes a search phrase using the `query` parameter when the player searches.
+The LocalScript in `StarterGui` displays those same YouTube results. Enable
+**Game Settings > Security > Allow HTTP Requests**.
 
-Deploy this Node.js app to a public HTTPS host, then set `API_URL` in
-`VideoCatalogServer.server.luau` to the deployed `/videos` address, for example:
+The in-game UI displays metadata and watch links; it cannot embed the website
+or stream YouTube playback. Players can watch videos using the Render site.
 
-```lua
-local API_URL = "https://your-deployed-host.example/videos"
+## Run locally
+
+Requires Node.js 16 or later. From this folder:
+
+```text
+npm start
 ```
 
-Enable **Game Settings > Security > Allow HTTP Requests** in Roblox Studio. The
-Roblox server script calls this endpoint; the LocalScript receives the catalog
-through `ReplicatedStorage.VideoCatalogRequest`.
-
-The endpoint returns the schema expected by the Roblox server script:
-`{"videos":[{"videoId":"...","title":"...","thumbnailUrl":"..."}]}`.
-The catalog API only transports metadata. Roblox cannot embed YouTube or stream
-an external site's videos in a `VideoFrame`; playback requires Roblox video
-assets.
+Set `YOUTUBE_API_KEY` in the environment before starting. The site is then
+available at `http://localhost:3000`.
