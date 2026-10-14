@@ -4,182 +4,208 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="Search and watch YouTube videos with Hexium">
-	<title>Hexium Video</title>
+	<title>Hexium Web</title>
 	<style>
 		:root {
 			color-scheme: dark;
-			font-family: Arial, sans-serif;
-			background: #0f0f0f;
-			color: #f1f1f1;
+			font-family: Arial, Helvetica, sans-serif;
+			background: #090a0c;
+			color: #f5f5f5;
+			font-synthesis: none;
+			text-rendering: optimizeLegibility;
 		}
 
 		* { box-sizing: border-box; }
+		[hidden] { display: none !important; }
+		body { min-width: 340px; min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 0%, #202126 0, #101114 48%, #090a0c 100%); }
+		button, input { font: inherit; }
+		button { color: inherit; }
 
-		body { margin: 0; }
-
-		header {
-			position: sticky;
-			top: 0;
-			z-index: 2;
+		.browser-window {
 			display: flex;
+			width: min(1440px, 92vw);
+			height: min(900px, 88vh);
+			min-height: 540px;
+			flex-direction: column;
+			overflow: hidden;
+			border: 1px solid #38393f;
+			border-radius: 12px;
+			background: #121316;
+			box-shadow: 0 28px 100px #000a;
+		}
+
+		.topbar {
+			z-index: 1;
+			display: flex;
+			height: 68px;
+			min-height: 68px;
 			align-items: center;
-			gap: 24px;
-			padding: 14px max(24px, calc((100vw - 1440px) / 2));
-			background: #171717;
-			border-bottom: 1px solid #303030;
+			gap: 14px;
+			padding: 0 18px 0 24px;
+			border-bottom: 1px solid #38393f;
+			background: #1e1f23;
 		}
 
-		.brand {
-			flex: 0 0 auto;
-			color: #ff4545;
-			font-size: 23px;
-			font-weight: 700;
-			text-decoration: none;
-		}
+		.brand { display: flex; min-width: 190px; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+		.brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 9px; background: #e62117; font-size: 18px; font-weight: 800; }
+		.brand-copy { font-size: 19px; font-weight: 700; letter-spacing: -.35px; }
+		.topbar-spacer { flex: 1; }
+		.top-link { padding: 9px 13px; border: 1px solid #48494f; border-radius: 7px; background: #303136; color: #f5f5f5; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; transition: background .15s ease; }
+		.top-link:hover { background: #414249; }
+		.close-look { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 7px; background: #c43b3b; color: #fff; font-size: 18px; font-weight: 700; text-decoration: none; }
+		.close-look:hover { background: #df4a4a; }
 
-		form {
-			display: flex;
-			width: min(640px, 100%);
-			margin: 0 auto;
-		}
+		.browser-body { display: grid; min-height: 0; flex: 1; grid-template-columns: 190px minmax(0, 1fr); }
+		.sidebar { display: flex; flex-direction: column; gap: 9px; padding: 22px 13px; border-right: 1px solid #303137; background: #191a1e; }
+		.sidebar-label { margin: 2px 9px 8px; color: #898b93; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+		.tab-button { display: flex; min-height: 44px; align-items: center; gap: 11px; padding: 0 12px; border: 0; border-radius: 7px; background: #292a2f; color: #e7e7e9; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; transition: background .15s ease; }
+		.tab-button:hover { background: #37383e; }
+		.tab-button[aria-selected="true"] { background: #df211b; color: #fff; }
+		.tab-button.uploads[aria-selected="true"] { background: #8438cf; }
+		.tab-icon { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 6px; background: #ffffff18; font-size: 12px; }
+		.sidebar-note { margin: auto 8px 2px; color: #777981; font-size: 12px; line-height: 1.55; }
 
-		input, button { font: inherit; }
+		.page { display: flex; min-width: 0; min-height: 0; flex-direction: column; padding: 22px 26px 24px; overflow: auto; }
+		.youtube-page { gap: 16px; }
+		.page-heading { display: flex; min-height: 42px; align-items: center; gap: 12px; }
+		.page-heading h1 { margin: 0; font-size: 24px; letter-spacing: -.45px; }
+		.youtube-logo { color: #ff3931; font-size: 22px; }
+		.search-form { display: flex; width: min(510px, 58%); height: 40px; margin-left: auto; }
+		.search-form input { min-width: 0; flex: 1; padding: 0 15px; border: 1px solid #48494f; border-right: 0; border-radius: 8px 0 0 8px; outline: none; background: #111215; color: #fff; }
+		.search-form input:focus { border-color: #9698a1; }
+		.search-form input::placeholder { color: #93959d; }
+		.search-form button { width: 82px; border: 1px solid #48494f; border-radius: 0 8px 8px 0; background: #34353a; font-weight: 700; cursor: pointer; }
+		.search-form button:hover { background: #44454b; }
+		.status { min-height: 18px; margin: -8px 0 -2px; color: #a3a4ab; font-size: 13px; }
 
-		input {
-			min-width: 0;
-			flex: 1;
-			padding: 11px 16px;
-			border: 1px solid #454545;
-			border-radius: 24px 0 0 24px;
-			outline: none;
-			background: #101010;
-			color: #f1f1f1;
-		}
+		.watch-layout { display: grid; min-height: 0; flex: 1; grid-template-columns: minmax(0, 1.8fr) minmax(270px, .9fr); gap: 21px; }
+		.player-column { display: flex; min-width: 0; flex-direction: column; }
+		.player-frame, .player-placeholder { width: 100%; aspect-ratio: 16 / 9; flex: 0 0 auto; border: 0; border-radius: 9px; background: #080809; }
+		.player-placeholder { display: grid; place-items: center; border: 1px solid #33343a; color: #9b9da5; font-size: 14px; }
+		.player-title { margin: 15px 0 7px; font-size: 19px; line-height: 1.35; }
+		.player-details { color: #a4a5ac; font-size: 13px; line-height: 1.5; }
+		.results-column { display: flex; min-height: 0; flex-direction: column; }
+		.results-heading { margin: 0 0 12px; color: #dadbe0; font-size: 15px; font-weight: 700; }
+		.video-list { display: flex; min-height: 0; flex-direction: column; gap: 12px; overflow: auto; padding: 0 5px 6px 0; }
+		.video-card { display: grid; width: 100%; grid-template-columns: minmax(105px, 43%) minmax(0, 1fr); gap: 11px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+		.video-card:hover .video-title { color: #ff7770; }
+		.video-card:focus-visible, .tab-button:focus-visible, .top-link:focus-visible, .close-look:focus-visible { outline: 2px solid #ff6b63; outline-offset: 2px; }
+		.video-thumb, .thumbnail-placeholder { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 7px; background: #292a2f; object-fit: cover; }
+		.thumbnail-placeholder { display: grid; place-items: center; color: #9698a0; font-size: 12px; }
+		.video-copy { min-width: 0; padding-top: 2px; }
+		.video-title { display: -webkit-box; margin: 0 0 7px; overflow: hidden; color: #eeeef0; font-size: 13px; font-weight: 700; line-clamp: 3; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+		.video-meta { display: flex; flex-direction: column; gap: 4px; color: #999ba3; font-size: 11px; line-height: 1.4; }
 
-		input:focus { border-color: #858585; }
-
-		form button {
-			padding: 0 20px;
-			border: 1px solid #454545;
-			border-left: 0;
-			border-radius: 0 24px 24px 0;
-			background: #292929;
-			color: #f1f1f1;
-			cursor: pointer;
-		}
-
-		main {
-			display: grid;
-			grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.85fr);
-			gap: 28px;
-			max-width: 1440px;
-			margin: 0 auto;
-			padding: 28px 24px;
-		}
-
-		.player-column { min-width: 0; }
-
-		.player-frame {
-			width: 100%;
-			aspect-ratio: 16 / 9;
-			border: 0;
-			border-radius: 12px;
-			background: #000;
-		}
-
-		#player-placeholder {
-			display: grid;
-			width: 100%;
-			aspect-ratio: 16 / 9;
-			place-items: center;
-			border-radius: 12px;
-			background: #1b1b1b;
-			color: #aaa;
-			text-align: center;
-		}
-
-		h1 { margin: 18px 0 8px; font-size: 22px; }
-		#player-details, #status { color: #aaa; line-height: 1.5; }
-		#status { min-height: 24px; margin: 0 0 12px; }
-
-		#videos {
-			display: grid;
-			gap: 12px;
-			align-content: start;
-		}
-
-		.video-card {
-			display: grid;
-			grid-template-columns: 168px minmax(0, 1fr);
-			gap: 12px;
-			width: 100%;
-			padding: 0;
-			border: 0;
-			background: transparent;
-			color: inherit;
-			text-align: left;
-			cursor: pointer;
-		}
-
-		.video-card img, .thumbnail-placeholder {
-			display: grid;
-			width: 168px;
-			aspect-ratio: 16 / 9;
-			place-items: center;
-			border-radius: 8px;
-			background: #272727;
-			color: #999;
-			object-fit: cover;
-		}
-
-		.video-card:hover .video-title { color: #ff7373; }
-		.video-copy { min-width: 0; }
-		.video-title { margin: 2px 0 7px; font-size: 15px; line-height: 1.4; }
-		.video-meta { color: #aaa; font-size: 13px; line-height: 1.45; }
+		.uploads-page { align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #211a29, #151419 70%); text-align: center; }
+		.uploads-icon { display: grid; width: 86px; height: 86px; place-items: center; border-radius: 24px; background: #8438cf24; color: #c581ff; font-size: 42px; }
+		.uploads-page h1 { margin: 22px 0 9px; color: #d7adff; font-size: 30px; }
+		.uploads-page p { max-width: 440px; margin: 0; color: #a6a1ad; font-size: 15px; line-height: 1.65; }
 
 		@media (max-width: 900px) {
-			main { grid-template-columns: 1fr; }
-			#videos { grid-template-columns: 1fr 1fr; }
+			.browser-window { width: 96vw; height: 94vh; }
+			.browser-body { grid-template-columns: 154px minmax(0, 1fr); }
+			.watch-layout { grid-template-columns: minmax(0, 1.35fr) minmax(235px, .9fr); gap: 14px; }
+			.page { padding: 18px; }
+			.brand { min-width: 155px; }
+			.topbar { padding: 0 12px; gap: 8px; }
+			.top-link { padding: 8px 9px; font-size: 12px; }
 		}
 
-		@media (max-width: 600px) {
-			header { gap: 14px; padding: 12px; }
-			.brand { font-size: 18px; }
-			main { padding: 18px 12px; }
-			#videos { grid-template-columns: 1fr; }
-			.video-card { grid-template-columns: 145px minmax(0, 1fr); }
-			.video-card img, .thumbnail-placeholder { width: 145px; }
+		@media (max-width: 650px) {
+			body { display: block; }
+			.browser-window { width: 100%; height: 100dvh; min-height: 500px; border: 0; border-radius: 0; }
+			.topbar { height: 58px; min-height: 58px; }
+			.brand { min-width: 0; }
+			.brand-copy { font-size: 16px; }
+			.brand-mark { width: 30px; height: 30px; }
+			.top-link { padding: 7px; font-size: 11px; }
+			.close-look { width: 30px; height: 30px; }
+			.browser-body { grid-template-columns: 112px minmax(0, 1fr); }
+			.sidebar { gap: 7px; padding: 16px 8px; }
+			.sidebar-label { margin: 2px 4px 7px; font-size: 9px; }
+			.tab-button { min-height: 42px; gap: 6px; padding: 0 7px; font-size: 11px; }
+			.tab-icon { width: 18px; height: 18px; flex: 0 0 18px; font-size: 10px; }
+			.sidebar-note { margin-right: 3px; margin-left: 3px; font-size: 10px; }
+			.page { padding: 14px 12px; }
+			.page-heading { flex-wrap: wrap; gap: 8px; }
+			.page-heading h1 { font-size: 20px; }
+			.search-form { width: 100%; height: 38px; order: 2; }
+			.status { margin: 0; }
+			.watch-layout { display: flex; flex-direction: column; overflow: visible; }
+			.results-column { min-height: 300px; }
+			.video-list { overflow: visible; }
+			.video-card { grid-template-columns: minmax(110px, 40%) minmax(0, 1fr); }
+		}
+
+		@media (max-width: 390px) {
+			.browser-body { grid-template-columns: 96px minmax(0, 1fr); }
+			.tab-button { font-size: 10px; }
+			.top-link { padding: 6px; font-size: 10px; }
+			.brand-copy { font-size: 14px; }
 		}
 	</style>
 </head>
 <body>
-	<header>
-		<a class="brand" href="/">Hexium Video</a>
-		<form id="search-form" role="search">
-			<input id="search-query" type="search" maxlength="100" placeholder="Search YouTube videos">
-			<button type="submit">Search</button>
-		</form>
-	</header>
-	<main>
-		<section class="player-column" aria-label="Video player">
-			<div id="player-placeholder">Choose a video to watch</div>
-			<iframe
-				id="player"
-				class="player-frame"
-				title="YouTube video player"
-				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-				referrerpolicy="strict-origin-when-cross-origin"
-				allowfullscreen
-				hidden>
-			</iframe>
-			<h1 id="player-title">Latest YouTube videos</h1>
-			<div id="player-details">Select any video to play it here.</div>
-		</section>
-		<section aria-label="YouTube search results">
-			<p id="status" role="status">Loading videos...</p>
-			<div id="videos"></div>
-		</section>
-	</main>
+	<div class="browser-window">
+		<header class="topbar">
+			<a class="brand" href="/" aria-label="Hexium Web home">
+				<span class="brand-mark">H</span>
+				<span class="brand-copy">Hexium Web</span>
+			</a>
+			<div class="topbar-spacer"></div>
+			<a class="top-link" href="https://hexium.zip/" target="_blank" rel="noopener noreferrer">Hexium Site</a>
+			<a class="top-link" href="https://hexium-video-catalog.onrender.com/" target="_blank" rel="noopener noreferrer">Video Site</a>
+			<a class="close-look" href="https://hexium.zip/" aria-label="Go to Hexium home">×</a>
+		</header>
+		<div class="browser-body">
+			<nav class="sidebar" aria-label="Sections">
+				<div class="sidebar-label">Hexium Browser</div>
+				<button class="tab-button" id="youtube-tab" type="button" role="tab" aria-selected="true" aria-controls="youtube-page">
+					<span class="tab-icon">▶</span>YouTube
+				</button>
+				<button class="tab-button uploads" id="uploads-tab" type="button" role="tab" aria-selected="false" aria-controls="uploads-page">
+					<span class="tab-icon">H</span>Hexium Uploads
+				</button>
+				<p class="sidebar-note">Search and watch videos on the website. In-game browsing opens this page separately.</p>
+			</nav>
+			<section class="page youtube-page" id="youtube-page" role="tabpanel" aria-labelledby="youtube-tab">
+				<div class="page-heading">
+					<span class="youtube-logo" aria-hidden="true">▶</span>
+					<h1>YouTube</h1>
+					<form class="search-form" id="search-form" role="search">
+						<input id="search-query" type="search" maxlength="100" placeholder="Search YouTube" aria-label="Search YouTube videos">
+						<button type="submit">Search</button>
+					</form>
+				</div>
+				<p class="status" id="status" role="status">Loading videos...</p>
+				<div class="watch-layout">
+					<section class="player-column" aria-label="Video player">
+						<div class="player-placeholder" id="player-placeholder">Choose a video to watch</div>
+						<iframe
+							id="player"
+							class="player-frame"
+							title="YouTube video player"
+							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+							referrerpolicy="strict-origin-when-cross-origin"
+							allowfullscreen
+							hidden>
+						</iframe>
+						<h2 class="player-title" id="player-title">Latest YouTube videos</h2>
+						<div class="player-details" id="player-details">Select a video from the list to play it here.</div>
+					</section>
+					<section class="results-column" aria-label="YouTube search results">
+						<h2 class="results-heading">Videos</h2>
+						<div class="video-list" id="videos"></div>
+					</section>
+				</div>
+			</section>
+			<section class="page uploads-page" id="uploads-page" role="tabpanel" aria-labelledby="uploads-tab" hidden>
+				<div class="uploads-icon" aria-hidden="true">⌁</div>
+				<h1>Hexium Uploads (WIP)</h1>
+				<p>This section is under construction. Hexium video uploads will appear here when they are available.</p>
+			</section>
+		</div>
+	</div>
 	<script>
 		const form = document.getElementById("search-form");
 		const searchQuery = document.getElementById("search-query");
@@ -189,6 +215,18 @@
 		const playerPlaceholder = document.getElementById("player-placeholder");
 		const playerTitle = document.getElementById("player-title");
 		const playerDetails = document.getElementById("player-details");
+		const youtubeTab = document.getElementById("youtube-tab");
+		const uploadsTab = document.getElementById("uploads-tab");
+		const youtubePage = document.getElementById("youtube-page");
+		const uploadsPage = document.getElementById("uploads-page");
+
+		function switchTab(tab) {
+			const showYouTube = tab === "youtube";
+			youtubeTab.setAttribute("aria-selected", String(showYouTube));
+			uploadsTab.setAttribute("aria-selected", String(!showYouTube));
+			youtubePage.hidden = !showYouTube;
+			uploadsPage.hidden = showYouTube;
+		}
 
 		function selectVideo(video) {
 			if (!/^[A-Za-z0-9_-]{11}$/.test(video.videoId)) {
@@ -220,6 +258,7 @@
 
 				if (video.thumbnailUrl) {
 					const image = document.createElement("img");
+					image.className = "video-thumb";
 					image.src = video.thumbnailUrl;
 					image.alt = "";
 					image.loading = "lazy";
@@ -241,7 +280,7 @@
 				const copy = document.createElement("div");
 				copy.className = "video-copy";
 
-				const title = document.createElement("h2");
+				const title = document.createElement("h3");
 				title.className = "video-title";
 				title.textContent = video.title;
 				copy.appendChild(title);
@@ -258,9 +297,6 @@
 			});
 
 			statusLabel.textContent = `${videos.length} videos · Select one to play`;
-			if (player.hidden) {
-				selectVideo(videos[0]);
-			}
 		}
 
 		async function loadVideos(query) {
@@ -274,7 +310,13 @@
 				}
 
 				const response = await fetch(endpoint);
-				const result = await response.json();
+				const responseBody = await response.text();
+				let result;
+				try {
+					result = JSON.parse(responseBody);
+				} catch (error) {
+					throw new Error(`Video service returned a non-JSON response (${response.status}).`);
+				}
 				if (!response.ok) {
 					throw new Error(result.error || `Request failed (${response.status})`);
 				}
@@ -282,11 +324,7 @@
 					throw new Error("The video service returned an invalid response.");
 				}
 
-				if (query) {
-					playerTitle.textContent = `Search results for “${query}”`;
-				} else {
-					playerTitle.textContent = "Latest YouTube videos";
-				}
+				playerTitle.textContent = query ? `Search results for “${query}”` : "Latest YouTube videos";
 				renderVideos(result.videos);
 			} catch (error) {
 				statusLabel.textContent = error.message || "Could not load YouTube videos.";
@@ -294,6 +332,8 @@
 			}
 		}
 
+		youtubeTab.addEventListener("click", () => switchTab("youtube"));
+		uploadsTab.addEventListener("click", () => switchTab("uploads"));
 		form.addEventListener("submit", (event) => {
 			event.preventDefault();
 			loadVideos(searchQuery.value.trim());
