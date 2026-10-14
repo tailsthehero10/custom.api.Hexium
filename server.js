@@ -10,6 +10,40 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const POPULAR_REGION_CODE = /^[A-Z]{2}$/.test(process.env.YOUTUBE_REGION_CODE || "US")
 	? process.env.YOUTUBE_REGION_CODE || "US"
 	: "US";
+let ROBLOX_VIDEO_ASSET_MAP = Object.create(null);
+if (process.env.ROBLOX_VIDEO_ASSET_MAP) {
+	try {
+		const configuredMap = JSON.parse(process.env.ROBLOX_VIDEO_ASSET_MAP);
+		if (!configuredMap || typeof configuredMap !== "object" || Array.isArray(configuredMap)) {
+			throw new Error("Expected a JSON object keyed by YouTube video ID.");
+		}
+		for (const [videoId, assetId] of Object.entries(configuredMap)) {
+			if (!/^[A-Za-z0-9_-]{11}$/.test(videoId) || !/^\d{1,20}$/.test(String(assetId))) {
+				throw new Error(`Invalid YouTube video ID or Roblox video asset ID for "${videoId}".`);
+			}
+			ROBLOX_VIDEO_ASSET_MAP[videoId] = String(assetId);
+		}
+	} catch (error) {
+		throw new Error(`Invalid ROBLOX_VIDEO_ASSET_MAP: ${error.message}`);
+	}
+}
+let ROBLOX_THUMBNAIL_ASSET_MAP = Object.create(null);
+if (process.env.ROBLOX_THUMBNAIL_ASSET_MAP) {
+	try {
+		const configuredMap = JSON.parse(process.env.ROBLOX_THUMBNAIL_ASSET_MAP);
+		if (!configuredMap || typeof configuredMap !== "object" || Array.isArray(configuredMap)) {
+			throw new Error("Expected a JSON object keyed by YouTube video ID.");
+		}
+		for (const [videoId, assetId] of Object.entries(configuredMap)) {
+			if (!/^[A-Za-z0-9_-]{11}$/.test(videoId) || !/^\d{1,20}$/.test(String(assetId))) {
+				throw new Error(`Invalid YouTube video ID or Roblox thumbnail asset ID for "${videoId}".`);
+			}
+			ROBLOX_THUMBNAIL_ASSET_MAP[videoId] = String(assetId);
+		}
+	} catch (error) {
+		throw new Error(`Invalid ROBLOX_THUMBNAIL_ASSET_MAP: ${error.message}`);
+	}
+}
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 100;
 const catalogCache = new Map();
@@ -92,7 +126,7 @@ function cacheResult(cache, key, body) {
 	});
 }
 
-async function fetchYouTubeVideos(query, order, feed, filters) {
+async function fetchYouTubeVideos(query, order, feed, filters, pageToken) {
 	if (!YOUTUBE_API_KEY) {
 		return {
 			statusCode: 503,
@@ -100,7 +134,7 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 		};
 	}
 
-	const cacheKey = JSON.stringify([feed, order, query.toLowerCase(), filters]);
+	const cacheKey = JSON.stringify([feed, order, query.toLowerCase(), filters, pageToken]);
 	const cached = catalogCache.get(cacheKey);
 	if (cached && cached.expiresAt > Date.now()) {
 		return { statusCode: 200, body: cached.body };
@@ -114,12 +148,14 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 			&& !filters.duration && !filters.publishedAfter && !filters.channelId;
 		let searchItems;
 		let detailsById = new Map();
+		let nextPageToken = "";
 		if (usePopularChart) {
 			const popularUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
 			popularUrl.searchParams.set("part", "snippet,contentDetails,statistics,liveStreamingDetails,status");
 			popularUrl.searchParams.set("chart", "mostPopular");
 			popularUrl.searchParams.set("regionCode", POPULAR_REGION_CODE);
-			popularUrl.searchParams.set("maxResults", "50");
+			popularUrl.searchParams.set("maxResults", "12");
+			if (pageToken) popularUrl.searchParams.set("pageToken", pageToken);
 			popularUrl.searchParams.set("key", YOUTUBE_API_KEY);
 			if (filters.categoryId) popularUrl.searchParams.set("videoCategoryId", filters.categoryId);
 
@@ -135,11 +171,46 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 				item.status &&
 				item.status.embeddable === true &&
 				item.status.privacyStatus === "public");
-			searchItems = popularItems.slice(0, 12).map((item) => ({
+			searchItems = popularItems.map((item) => ({
 				id: { videoId: item.id },
 				snippet: item.snippet,
 			}));
+			nextPageToken = popularResult.nextPageToken || "";
 			detailsById = new Map(popularItems.map((item) => [item.id, item]));
+		} else if (feed === "channel") {
+			const channelResult = await fetchYouTubeChannels(filters.channelId);
+			if (channelResult.statusCode !== 200) {
+				throw new Error(channelResult.body.error || "YouTube channel could not be loaded.");
+			}
+			const uploadsPlaylistId = channelResult.body.channel.uploadsPlaylistId;
+			if (uploadsPlaylistId) {
+				const uploadsUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+				uploadsUrl.searchParams.set("part", "snippet,contentDetails");
+				uploadsUrl.searchParams.set("playlistId", uploadsPlaylistId);
+				uploadsUrl.searchParams.set("maxResults", "12");
+				if (pageToken) uploadsUrl.searchParams.set("pageToken", pageToken);
+				uploadsUrl.searchParams.set("key", YOUTUBE_API_KEY);
+				const uploadsResult = await requestYouTubeJson(uploadsUrl);
+				if (!Array.isArray(uploadsResult.items)) {
+					throw new Error("YouTube returned an unexpected channel uploads list.");
+				}
+				searchItems = uploadsResult.items.map((item) => {
+					const snippet = item.snippet || {};
+					const videoId = item.contentDetails && item.contentDetails.videoId
+						|| snippet.resourceId && snippet.resourceId.videoId || "";
+					return {
+						id: { videoId },
+						snippet: {
+							...snippet,
+							channelId: snippet.videoOwnerChannelId || filters.channelId,
+							channelTitle: snippet.videoOwnerChannelTitle || channelResult.body.channel.title,
+						},
+					};
+				}).filter((item) => /^[A-Za-z0-9_-]{11}$/.test(item.id.videoId));
+				nextPageToken = uploadsResult.nextPageToken || "";
+			} else {
+				searchItems = [];
+			}
 		} else {
 			const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
 			searchUrl.searchParams.set("part", "snippet");
@@ -149,6 +220,7 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 			searchUrl.searchParams.set("videoEmbeddable", "true");
 			searchUrl.searchParams.set("safeSearch", "moderate");
 			searchUrl.searchParams.set("key", YOUTUBE_API_KEY);
+			if (pageToken) searchUrl.searchParams.set("pageToken", pageToken);
 			if (feed === "shorts") searchUrl.searchParams.set("videoDuration", "short");
 			if (feed === "live") searchUrl.searchParams.set("eventType", "live");
 			if (feed === "channel") searchUrl.searchParams.set("channelId", filters.channelId);
@@ -171,6 +243,7 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 				typeof item.id.videoId === "string" &&
 				item.snippet &&
 				typeof item.snippet.title === "string");
+			nextPageToken = searchResult.nextPageToken || "";
 		}
 
 		if (searchItems.length > 0 && !usePopularChart) {
@@ -197,7 +270,7 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 					|| Boolean(details.liveStreamingDetails
 						&& details.liveStreamingDetails.actualStartTime
 						&& !details.liveStreamingDetails.actualEndTime);
-				return {
+				const video = {
 					videoId,
 					title: item.snippet.title,
 					channelTitle: item.snippet.channelTitle || "",
@@ -213,10 +286,15 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 					viewCount: details.statistics && details.statistics.viewCount || "0",
 					likeCount: details.statistics && details.statistics.likeCount || "0",
 				};
+				const robloxVideoId = ROBLOX_VIDEO_ASSET_MAP[videoId];
+				if (robloxVideoId) video.robloxVideoId = robloxVideoId;
+				const robloxThumbnailId = ROBLOX_THUMBNAIL_ASSET_MAP[videoId];
+				if (robloxThumbnailId) video.robloxThumbnailId = robloxThumbnailId;
+				return video;
 			})
 			.filter((video) => feed !== "shorts" || video.isShort);
 
-		const body = { videos };
+		const body = { videos, nextPageToken };
 		cacheResult(catalogCache, cacheKey, body);
 		return { statusCode: 200, body };
 	} catch (error) {
@@ -225,6 +303,170 @@ async function fetchYouTubeVideos(query, order, feed, filters) {
 			? "YouTube search quota exceeded. Try again later."
 			: "YouTube search failed. Check the API key, YouTube Data API access, and network connection.";
 		return { statusCode: 502, body: { error: errorMessage } };
+	}
+}
+
+async function fetchYouTubeSearch(query, type, pageToken) {
+	if (!YOUTUBE_API_KEY) {
+		return {
+			statusCode: 503,
+			body: { error: "YouTube search is not configured. Set YOUTUBE_API_KEY in the Render environment." },
+		};
+	}
+	if (!query) return { statusCode: 400, body: { error: "A search query is required." } };
+
+	const cacheKey = JSON.stringify(["search", type, query.toLowerCase(), pageToken]);
+	const cached = catalogCache.get(cacheKey);
+	if (cached && cached.expiresAt > Date.now()) return { statusCode: 200, body: cached.body };
+	if (cached) catalogCache.delete(cacheKey);
+
+	try {
+		const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+		searchUrl.searchParams.set("part", "snippet");
+		searchUrl.searchParams.set("type", type);
+		searchUrl.searchParams.set("q", query);
+		searchUrl.searchParams.set("maxResults", "12");
+		searchUrl.searchParams.set("safeSearch", "moderate");
+		searchUrl.searchParams.set("key", YOUTUBE_API_KEY);
+		if (pageToken) searchUrl.searchParams.set("pageToken", pageToken);
+		const result = await requestYouTubeJson(searchUrl);
+		if (!Array.isArray(result.items)) throw new Error("YouTube returned an unexpected search list.");
+
+		const results = result.items.map((item) => {
+			const id = item.id || {};
+			const snippet = item.snippet || {};
+			const thumbnails = snippet.thumbnails || {};
+			const thumbnail = thumbnails.high || thumbnails.medium || thumbnails.default;
+			const resourceId = type === "channel" ? id.channelId : id.playlistId;
+			return {
+				id: resourceId || "",
+				title: snippet.title || "",
+				description: snippet.description || "",
+				channelId: snippet.channelId || "",
+				channelTitle: snippet.channelTitle || "",
+				publishedAt: snippet.publishedAt || "",
+				thumbnailUrl: thumbnail ? thumbnail.url : "",
+			};
+		}).filter((item) => item.id && item.title);
+		const body = { results, nextPageToken: result.nextPageToken || "" };
+		cacheResult(catalogCache, cacheKey, body);
+		return { statusCode: 200, body };
+	} catch (error) {
+		console.error(`[Hexium Catalog] YouTube ${type} search failed:`, error.message);
+		return {
+			statusCode: 502,
+			body: { error: `YouTube ${type} search failed. Check API access and try again.` },
+		};
+	}
+}
+
+async function fetchYouTubeChannels(channelId) {
+	if (!YOUTUBE_API_KEY) return { statusCode: 503, body: { error: "YouTube API is not configured." } };
+	try {
+		const channelsUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+		channelsUrl.searchParams.set("part", "snippet,statistics,contentDetails,brandingSettings");
+		channelsUrl.searchParams.set("id", channelId);
+		channelsUrl.searchParams.set("key", YOUTUBE_API_KEY);
+		const result = await requestYouTubeJson(channelsUrl);
+		const item = Array.isArray(result.items) ? result.items[0] : null;
+		if (!item) return { statusCode: 404, body: { error: "YouTube channel was not found or is not public." } };
+		const snippet = item.snippet || {};
+		const statistics = item.statistics || {};
+		const thumbnails = snippet.thumbnails || {};
+		const thumbnail = thumbnails.high || thumbnails.medium || thumbnails.default;
+		return {
+			statusCode: 200,
+			body: {
+				channel: {
+					channelId: item.id,
+					title: snippet.title || "",
+					description: snippet.description || "",
+					customUrl: snippet.customUrl || "",
+					publishedAt: snippet.publishedAt || "",
+					thumbnailUrl: thumbnail ? thumbnail.url : "",
+					subscriberCount: statistics.hiddenSubscriberCount ? null : statistics.subscriberCount || "0",
+					viewCount: statistics.viewCount || "0",
+					videoCount: statistics.videoCount || "0",
+					uploadsPlaylistId: item.contentDetails && item.contentDetails.relatedPlaylists
+						? item.contentDetails.relatedPlaylists.uploads || "" : "",
+				},
+			},
+		};
+	} catch (error) {
+		console.error("[Hexium Catalog] YouTube channel lookup failed:", error.message);
+		return { statusCode: 502, body: { error: "YouTube channel details could not be loaded." } };
+	}
+}
+
+async function fetchYouTubePlaylists(channelId, playlistId, pageToken) {
+	if (!YOUTUBE_API_KEY) return { statusCode: 503, body: { error: "YouTube API is not configured." } };
+	try {
+		const playlistsUrl = new URL("https://www.googleapis.com/youtube/v3/playlists");
+		playlistsUrl.searchParams.set("part", "snippet,contentDetails,status");
+		playlistsUrl.searchParams.set("maxResults", "12");
+		playlistsUrl.searchParams.set("key", YOUTUBE_API_KEY);
+		if (playlistId) playlistsUrl.searchParams.set("id", playlistId);
+		else playlistsUrl.searchParams.set("channelId", channelId);
+		if (pageToken) playlistsUrl.searchParams.set("pageToken", pageToken);
+		const result = await requestYouTubeJson(playlistsUrl);
+		if (!Array.isArray(result.items)) throw new Error("YouTube returned an unexpected playlist list.");
+		const playlists = result.items.map((item) => {
+			const snippet = item.snippet || {};
+			const thumbnails = snippet.thumbnails || {};
+			const thumbnail = thumbnails.high || thumbnails.medium || thumbnails.default;
+			return {
+				playlistId: item.id,
+				title: snippet.title || "",
+				description: snippet.description || "",
+				channelId: snippet.channelId || "",
+				channelTitle: snippet.channelTitle || "",
+				publishedAt: snippet.publishedAt || "",
+				thumbnailUrl: thumbnail ? thumbnail.url : "",
+				itemCount: item.contentDetails && item.contentDetails.itemCount || 0,
+				privacyStatus: item.status && item.status.privacyStatus || "public",
+			};
+		}).filter((playlist) => playlist.playlistId && playlist.title);
+		return {
+			statusCode: 200,
+			body: playlistId
+				? { playlist: playlists[0] || null }
+				: { playlists, nextPageToken: result.nextPageToken || "" },
+		};
+	} catch (error) {
+		console.error("[Hexium Catalog] YouTube playlists lookup failed:", error.message);
+		return { statusCode: 502, body: { error: "YouTube playlists could not be loaded." } };
+	}
+}
+
+async function fetchYouTubePlaylistItems(playlistId, pageToken) {
+	if (!YOUTUBE_API_KEY) return { statusCode: 503, body: { error: "YouTube API is not configured." } };
+	try {
+		const itemsUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+		itemsUrl.searchParams.set("part", "snippet,contentDetails");
+		itemsUrl.searchParams.set("playlistId", playlistId);
+		itemsUrl.searchParams.set("maxResults", "12");
+		itemsUrl.searchParams.set("key", YOUTUBE_API_KEY);
+		if (pageToken) itemsUrl.searchParams.set("pageToken", pageToken);
+		const result = await requestYouTubeJson(itemsUrl);
+		if (!Array.isArray(result.items)) throw new Error("YouTube returned an unexpected playlist item list.");
+		const items = result.items.map((item) => {
+			const snippet = item.snippet || {};
+			const thumbnails = snippet.thumbnails || {};
+			const thumbnail = thumbnails.high || thumbnails.medium || thumbnails.default;
+			return {
+				videoId: item.contentDetails && item.contentDetails.videoId
+					|| snippet.resourceId && snippet.resourceId.videoId || "",
+				title: snippet.title || "",
+				channelId: snippet.videoOwnerChannelId || "",
+				channelTitle: snippet.videoOwnerChannelTitle || "",
+				publishedAt: snippet.publishedAt || "",
+				thumbnailUrl: thumbnail ? thumbnail.url : "",
+			};
+		}).filter((item) => /^[A-Za-z0-9_-]{11}$/.test(item.videoId) && item.title !== "Private video" && item.title !== "Deleted video");
+		return { statusCode: 200, body: { videos: items, nextPageToken: result.nextPageToken || "" } };
+	} catch (error) {
+		console.error("[Hexium Catalog] YouTube playlist items lookup failed:", error.message);
+		return { statusCode: 502, body: { error: "YouTube playlist videos could not be loaded." } };
 	}
 }
 
@@ -311,9 +553,14 @@ const server = http.createServer((request, response) => {
 		const categoryId = requestUrl.searchParams.get("categoryId") || "";
 		const requestedPublished = requestUrl.searchParams.get("published") || "";
 		const channelId = requestUrl.searchParams.get("channelId") || "";
+		const pageToken = requestUrl.searchParams.get("pageToken") || "";
 		const publishedIntervals = { day: 1, week: 7, month: 30, year: 365 };
 		if (query.length > 100) {
 			sendJson(response, 400, { error: "Search query must be 100 characters or fewer." });
+			return;
+		}
+		if (pageToken.length > 512) {
+			sendJson(response, 400, { error: "pageToken must be 512 characters or fewer." });
 			return;
 		}
 		if (duration && !["short", "medium", "long"].includes(duration)) {
@@ -350,11 +597,100 @@ const server = http.createServer((request, response) => {
 			channelId,
 		};
 
-		fetchYouTubeVideos(query, order, feed, filters)
+		fetchYouTubeVideos(query, order, feed, filters, pageToken)
 			.then((result) => sendJson(response, result.statusCode, result.body))
 			.catch((error) => {
 				console.error("[Hexium Catalog] Unexpected video catalog error:", error);
 				sendJson(response, 500, { error: "Video catalog is unavailable." });
+			});
+		return;
+	}
+
+	if (requestUrl.pathname === "/search") {
+		const query = (requestUrl.searchParams.get("query") || "").trim();
+		const type = requestUrl.searchParams.get("type") || "video";
+		const pageToken = requestUrl.searchParams.get("pageToken") || "";
+		if (!["channel", "playlist"].includes(type)) {
+			sendJson(response, 400, { error: "Search type must be channel or playlist." });
+			return;
+		}
+		if (query.length > 100) {
+			sendJson(response, 400, { error: "Search query must be 100 characters or fewer." });
+			return;
+		}
+		if (pageToken.length > 512) {
+			sendJson(response, 400, { error: "pageToken must be 512 characters or fewer." });
+			return;
+		}
+		fetchYouTubeSearch(query, type, pageToken)
+			.then((result) => sendJson(response, result.statusCode, result.body))
+			.catch((error) => {
+				console.error("[Hexium Catalog] Unexpected search error:", error);
+				sendJson(response, 500, { error: "YouTube search is unavailable." });
+			});
+		return;
+	}
+
+	if (requestUrl.pathname === "/channels") {
+		const channelId = requestUrl.searchParams.get("channelId") || "";
+		if (!/^UC[A-Za-z0-9_-]{22}$/.test(channelId)) {
+			sendJson(response, 400, { error: "A valid public YouTube channelId is required." });
+			return;
+		}
+		fetchYouTubeChannels(channelId)
+			.then((result) => sendJson(response, result.statusCode, result.body))
+			.catch((error) => {
+				console.error("[Hexium Catalog] Unexpected channel error:", error);
+				sendJson(response, 500, { error: "YouTube channel is unavailable." });
+			});
+		return;
+	}
+
+	if (requestUrl.pathname === "/playlists") {
+		const channelId = requestUrl.searchParams.get("channelId") || "";
+		const playlistId = requestUrl.searchParams.get("playlistId") || "";
+		const pageToken = requestUrl.searchParams.get("pageToken") || "";
+		if (Boolean(channelId) === Boolean(playlistId)) {
+			sendJson(response, 400, { error: "Provide exactly one of channelId or playlistId." });
+			return;
+		}
+		if (channelId && !/^UC[A-Za-z0-9_-]{22}$/.test(channelId)) {
+			sendJson(response, 400, { error: "A valid public YouTube channelId is required." });
+			return;
+		}
+		if (playlistId && !/^[A-Za-z0-9_-]{10,64}$/.test(playlistId)) {
+			sendJson(response, 400, { error: "A valid public YouTube playlistId is required." });
+			return;
+		}
+		if (pageToken.length > 512) {
+			sendJson(response, 400, { error: "pageToken must be 512 characters or fewer." });
+			return;
+		}
+		fetchYouTubePlaylists(channelId, playlistId, pageToken)
+			.then((result) => sendJson(response, result.statusCode, result.body))
+			.catch((error) => {
+				console.error("[Hexium Catalog] Unexpected playlist error:", error);
+				sendJson(response, 500, { error: "YouTube playlists are unavailable." });
+			});
+		return;
+	}
+
+	if (requestUrl.pathname === "/playlistItems") {
+		const playlistId = requestUrl.searchParams.get("playlistId") || "";
+		const pageToken = requestUrl.searchParams.get("pageToken") || "";
+		if (!/^[A-Za-z0-9_-]{10,64}$/.test(playlistId)) {
+			sendJson(response, 400, { error: "A valid public YouTube playlistId is required." });
+			return;
+		}
+		if (pageToken.length > 512) {
+			sendJson(response, 400, { error: "pageToken must be 512 characters or fewer." });
+			return;
+		}
+		fetchYouTubePlaylistItems(playlistId, pageToken)
+			.then((result) => sendJson(response, result.statusCode, result.body))
+			.catch((error) => {
+				console.error("[Hexium Catalog] Unexpected playlist items error:", error);
+				sendJson(response, 500, { error: "YouTube playlist videos are unavailable." });
 			});
 		return;
 	}

@@ -37,12 +37,24 @@ GET /videos?feed=live
 GET /videos?query=gaming&feed=shorts
 GET /videos?duration=long&published=month&categoryId=20
 GET /videos?feed=channel&channelId=UCxxxxxxxxxxxxxxxxxxxxxx
+GET /search?type=channel&query=Roblox
+GET /search?type=playlist&query=Roblox
+GET /channels?channelId=UCxxxxxxxxxxxxxxxxxxxxxx
+GET /playlists?channelId=UCxxxxxxxxxxxxxxxxxxxxxx
+GET /playlists?playlistId=PLxxxxxxxxxxxxxxxx
+GET /playlistItems?playlistId=PLxxxxxxxxxxxxxxxx
 GET /comments?videoId=YouTubeVideoId
 GET /health
 ```
 
-The `/videos` feed supports `videos` (default), `shorts`, and `live`. Shorts
-search adds a `#shorts` hint and filters for videos up to three minutes long.
+The website search selector searches public videos, channels, or playlists.
+Channel result pages include channel details, recent uploads, and public
+playlists. Public playlist pages show their videos. Feed, search, channel
+playlist, and playlist-item responses include `nextPageToken`; send it back as
+`pageToken` to continue browsing.
+
+The `/videos` feed supports `videos` (default), `shorts`, `live`, and `channel`.
+Shorts search adds a `#shorts` hint and filters for videos up to three minutes long.
 The YouTube Data API does not expose a Shorts label or video orientation, so
 this is a best-effort Shorts-style feed rather than an exact copy of YouTube's
 Shorts classification. Video details include duration and view counts.
@@ -54,13 +66,13 @@ search. Set Shorts and Live as feed types. Public comments are read-only and
 may be unavailable when a video's owner has disabled comments.
 
 The website includes Home, Shorts, Live, Trending, Gaming/Music/Technology,
-Latest and Popular views, search filters, channel pages, public comments, a
-watch page with an up-next list, and local Watch later, History, Liked videos,
-Subscriptions, and Playlists stored in the visitor's browser. These local
-library features do not sync with a YouTube account. The Data API requires
-OAuth and additional account scopes for actions such as subscribing, liking,
-commenting, and accessing private playlists; this app does not impersonate
-those account actions.
+Latest and Popular views, search filters, public channel and playlist search
+and detail pages, public comments, a watch page with an up-next list, and local
+Watch later, History, Liked videos, Subscriptions, and Playlists stored in the
+visitor's browser. These local library features do not sync with a YouTube
+account. This app exposes public, read-only Data API browsing; private
+resources and account actions such as subscribing, liking, commenting, and
+editing playlists require OAuth and are not available through an API key alone.
 
 The Roblox video browser opens full-screen when the LocalScript starts, fetches
 the live catalog through the server, and refreshes it every five minutes while
@@ -114,6 +126,19 @@ an `ImageLabel`, or force-open external browser windows. A result exposes its
 URL for the player to copy and open outside the game. If the feed reports an
 HTTP error, confirm HTTP requests are enabled and that the Render service has
 `YOUTUBE_API_KEY` configured.
+
+For optional Roblox-hosted in-game videos or thumbnails, configure
+`ROBLOX_VIDEO_ASSET_MAP` or `ROBLOX_THUMBNAIL_ASSET_MAP` as JSON objects
+mapping YouTube video IDs to approved Roblox asset ID strings. For example:
+
+```text
+ROBLOX_THUMBNAIL_ASSET_MAP={"dQw4w9WgXcQ":"9876543210"}
+ROBLOX_VIDEO_ASSET_MAP={"dQw4w9WgXcQ":"1234567890"}
+```
+
+The corresponding image/video assets must already be uploaded, approved, and
+usable by the Roblox experience. The YouTube image URLs returned by the Data
+API cannot be assigned directly to Roblox `ImageLabel`s.
 
 ## Run locally
 
